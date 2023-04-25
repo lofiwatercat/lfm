@@ -64,7 +64,7 @@ fn main() -> Result<()> {
             for child_entry in fs::read_dir(name.path()).unwrap() {
                 child_entries.push(child_entry.unwrap());
             }
-            directories.insert(name.file_name(), child_entries);
+            directories.insert(name.path(), child_entries);
         }
     }
 
@@ -73,6 +73,8 @@ fn main() -> Result<()> {
         stdout.queue(style::Print(entry)).unwrap();
         stdout.queue(cursor::MoveToNextLine(1)).unwrap();
     }
+
+    println!("{:?}", directories);
 
     stdout.queue(cursor::MoveToRow(0))?;
 
