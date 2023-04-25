@@ -1,9 +1,10 @@
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEvent},
-    style::{self, Color, Colors},
+    style::{self, Attribute, Color, Stylize},
     terminal, ExecutableCommand, QueueableCommand, Result,
 };
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{stdout, Write};
@@ -49,12 +50,28 @@ fn main() -> Result<()> {
         .execute(cursor::MoveTo(0, 0))
         .expect("Unable to move cursor");
 
+    // How to store files
+    // Hashmap with each key being a directory and value being a vector of it's
+    // contents
     // Read the contents of the current path and print them
+    let mut directories = HashMap::new();
+    let mut cur_directory = Vec::new();
     for entry in fs::read_dir(current_path).unwrap() {
-        // style::Print("{:?}", entry.unwrap().path());
-        let mut line = entry.unwrap().file_name().into_string().unwrap();
-        stdout.queue(style::Print(line))?;
-        stdout.queue(cursor::MoveToNextLine(1))?;
+        cur_directory.push(entry.as_ref().unwrap().file_name().into_string().unwrap());
+        let name = entry.unwrap();
+        if name.file_type()?.is_dir() {
+            let mut child_entries = Vec::new();
+            for child_entry in fs::read_dir(name.path()).unwrap() {
+                child_entries.push(child_entry.unwrap());
+            }
+            directories.insert(name.file_name(), child_entries);
+        }
+    }
+
+    // Print out cur_directory
+    for entry in &cur_directory {
+        stdout.queue(style::Print(entry)).unwrap();
+        stdout.queue(cursor::MoveToNextLine(1)).unwrap();
     }
 
     stdout.queue(cursor::MoveToRow(0))?;
@@ -77,7 +94,6 @@ fn main() -> Result<()> {
                     ..
                 } => {
                     stdout.execute(cursor::MoveDown(1))?;
-                    highlight_line(cursor_pos.1, Color::Blue)?;
                 }
                 KeyEvent {
                     code: KeyCode::Char('k'),
@@ -85,6 +101,42 @@ fn main() -> Result<()> {
                     ..
                 } => {
                     stdout.execute(cursor::MoveUp(1))?;
+                }
+                KeyEvent {
+                    code: KeyCode::Char('l'),
+                    modifiers: event::KeyModifiers::NONE,
+                    ..
+                } => {
+                    stdout.execute(cursor::MoveRight(1))?;
+                }
+                KeyEvent {
+                    code: KeyCode::Char('h'),
+                    modifiers: event::KeyModifiers::NONE,
+                    ..
+                } => {
+                    stdout.execute(cursor::MoveLeft(1))?;
+                }
+                KeyEvent {
+                    code: KeyCode::Char('t'),
+                    modifiers: event::KeyModifiers::NONE,
+                    ..
+                } => {
+                    // Grab a line
+                    stdout.execute(cursor::MoveToColumn(0))?;
+                    highlight_line(
+                        cursor_pos.1,
+                        Color::Blue,
+                        &cur_directory[cursor_pos.1 as usize],
+                    )?;
+                }
+                KeyEvent {
+                    code: KeyCode::Char('r'),
+                    modifiers: event::KeyModifiers::NONE,
+                    ..
+                } => {
+                    // Grab a line
+                    stdout.execute(cursor::MoveToColumn(0))?;
+                    unhighlight_line(cursor_pos.1, &cur_directory[cursor_pos.1 as usize])?;
                 }
                 _ => {
                     println!("{:?}\r", event)
@@ -97,13 +149,27 @@ fn main() -> Result<()> {
 }
 
 // Highlights the given row with the given color
-fn highlight_line(row: u16, color: Color) -> Result<()> {
+fn highlight_line(row: u16, color: Color, contents: &str) -> Result<()> {
     // Reprint the line?
     let size = terminal::size().unwrap();
 
-    for col in 0..size.1 {
-        stdout().execute(style::SetBackgroundColor(color))?;
-    }
+    stdout()
+        .queue(style::PrintStyledContent(
+            contents.with(Color::Black).on(Color::Blue),
+        ))?
+        .queue(cursor::MoveToColumn(0))?;
+
+    Ok(())
+}
+
+// Unhighlights the given row with the given color
+fn unhighlight_line(row: u16, contents: &str) -> Result<()> {
+    // Reprint the line?
+    let size = terminal::size().unwrap();
+
+    stdout()
+        .queue(style::Print(contents))?
+        .queue(cursor::MoveToColumn(0))?;
 
     Ok(())
 }
