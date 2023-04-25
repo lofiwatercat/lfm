@@ -9,6 +9,7 @@ use std::env;
 use std::fs;
 use std::io::{stdout, Write};
 use std::path::PathBuf;
+use walkdir::WalkDir;
 
 struct CleanUp;
 
@@ -54,8 +55,11 @@ fn main() -> Result<()> {
     // Hashmap with each key being a directory and value being a vector of it's
     // contents
     // Read the contents of the current path and print them
-    let mut directories = HashMap::new();
+    let mut dirs = HashMap::new();
     let mut cur_directory = Vec::new();
+    for entry in WalkDir::new(&current_path).min_depth(1).max_depth(1) {
+        println!("{}", entry?.path().display());
+    }
     for entry in fs::read_dir(current_path).unwrap() {
         cur_directory.push(entry.as_ref().unwrap().file_name().into_string().unwrap());
         let name = entry.unwrap();
@@ -64,17 +68,15 @@ fn main() -> Result<()> {
             for child_entry in fs::read_dir(name.path()).unwrap() {
                 child_entries.push(child_entry.unwrap());
             }
-            directories.insert(name.path(), child_entries);
+            dirs.insert(name.path(), child_entries);
         }
     }
 
-    // Print out cur_directory
-    for entry in &cur_directory {
-        stdout.queue(style::Print(entry)).unwrap();
-        stdout.queue(cursor::MoveToNextLine(1)).unwrap();
-    }
-
-    println!("{:?}", directories);
+    // // Print out cur_directory
+    // for entry in &cur_directory {
+    //     stdout.queue(style::Print(entry)).unwrap();
+    //     stdout.queue(cursor::MoveToNextLine(1)).unwrap();
+    // }
 
     stdout.queue(cursor::MoveToRow(0))?;
 
