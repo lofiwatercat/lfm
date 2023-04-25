@@ -47,7 +47,8 @@ fn main() -> Result<()> {
         .execute(terminal::Clear(terminal::ClearType::All))
         .expect("Unable to clear terminal")
         .execute(cursor::MoveTo(0, 0))
-        .expect("Unable to move cursor");
+        .expect("Unable to move cursor")
+        .queue(cursor::Hide)?;
 
     // How to store files
     // Hashmap with each key being a directory and value being a vector of it's
@@ -86,13 +87,20 @@ fn main() -> Result<()> {
     //     stdout.queue(cursor::MoveToNextLine(1)).unwrap();
     // }
 
+    // Setup for loop
+    let mut entries = get_strings_from_dir(&current_path, &dirs);
     stdout.queue(cursor::MoveToRow(0))?;
+    highlight_line(
+        cursor::position().unwrap().1,
+        Color::Blue,
+        &entries[cursor::position().unwrap().1 as usize],
+    )?;
 
     stdout.flush()?;
 
     // Process inputs
     loop {
-        let cursor_pos = cursor::position().unwrap();
+        let mut cursor_pos = cursor::position().unwrap();
         if let Event::Key(event) = event::read().expect("Failed to read line") {
             match event {
                 KeyEvent {
@@ -105,14 +113,20 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    stdout.execute(cursor::MoveDown(1))?;
+                    unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
+                    stdout.queue(cursor::MoveDown(1))?;
+                    cursor_pos = cursor::position().unwrap();
+                    highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
                 }
                 KeyEvent {
                     code: KeyCode::Char('k'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
+                    unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
                     stdout.execute(cursor::MoveUp(1))?;
+                    cursor_pos = cursor::position().unwrap();
+                    highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
                 }
                 KeyEvent {
                     code: KeyCode::Char('l'),
@@ -135,7 +149,7 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    let entries = get_strings_from_dir(&current_path, &dirs);
+                    entries = get_strings_from_dir(&current_path, &dirs);
                     highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
                 }
                 KeyEvent {
@@ -145,7 +159,7 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    let entries = get_strings_from_dir(&current_path, &dirs);
+                    entries = get_strings_from_dir(&current_path, &dirs);
                     unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
                 }
                 _ => {
@@ -182,6 +196,7 @@ fn highlight_line(row: u16, color: Color, contents: &str) -> Result<()> {
             contents.with(Color::Black).on(Color::Blue),
         ))?
         .queue(cursor::MoveToColumn(0))?;
+    stdout().flush()?;
 
     Ok(())
 }
@@ -194,6 +209,8 @@ fn unhighlight_line(row: u16, contents: &str) -> Result<()> {
     stdout()
         .queue(style::Print(contents))?
         .queue(cursor::MoveToColumn(0))?;
+
+    stdout().flush()?;
 
     Ok(())
 }
