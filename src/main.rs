@@ -135,11 +135,8 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    highlight_line(
-                        cursor_pos.1,
-                        Color::Blue,
-                        &cur_directory[cursor_pos.1 as usize],
-                    )?;
+                    let entries = get_strings_from_dir(&current_path, &dirs);
+                    highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
                 }
                 KeyEvent {
                     code: KeyCode::Char('r'),
@@ -148,7 +145,8 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    unhighlight_line(cursor_pos.1, &cur_directory[cursor_pos.1 as usize])?;
+                    let entries = get_strings_from_dir(&current_path, &dirs);
+                    unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
                 }
                 _ => {
                     println!("{:?}\r", event)
@@ -158,6 +156,20 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+// Returns a vector of strings converted from DirEntries from the given directory
+fn get_strings_from_dir<'a>(
+    current_dir: &'a PathBuf,
+    dirs: &'a HashMap<&'a PathBuf, Vec<walkdir::DirEntry>>,
+) -> Vec<&'a str> {
+    let strings: Vec<&str> = dirs
+        .get(current_dir)
+        .unwrap()
+        .iter()
+        .map(|dir_entry| dir_entry.file_name().to_str().unwrap())
+        .collect();
+    strings
 }
 
 // Highlights the given row with the given color
