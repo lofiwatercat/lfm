@@ -6,7 +6,6 @@ use crossterm::{
 };
 use std::collections::HashMap;
 use std::env;
-use std::fs;
 use std::io::{stdout, Write};
 use std::path::PathBuf;
 use walkdir::WalkDir;
@@ -34,10 +33,9 @@ fn main() -> Result<()> {
 
     // Take a directory given as an argument or default to current directory
     // let args: Vec<String> = env::args().collect();
-    let mut current_path = PathBuf::new();
 
     // TODO: Fix in the case where we take an argument. For now, default to current directory
-    current_path = env::current_dir().unwrap();
+    let mut current_path = env::current_dir().unwrap();
     if !current_path.is_dir() {
         println!("Not a directory");
     }
@@ -55,22 +53,32 @@ fn main() -> Result<()> {
     // Hashmap with each key being a directory and value being a vector of it's
     // contents
     // Read the contents of the current path and print them
-    let mut dirs = HashMap::new();
-    let mut cur_directory = Vec::new();
-    for entry in WalkDir::new(&current_path).min_depth(1).max_depth(1) {
-        println!("{}", entry?.path().display());
-    }
-    for entry in fs::read_dir(current_path).unwrap() {
-        cur_directory.push(entry.as_ref().unwrap().file_name().into_string().unwrap());
-        let name = entry.unwrap();
-        if name.file_type()?.is_dir() {
-            let mut child_entries = Vec::new();
-            for child_entry in fs::read_dir(name.path()).unwrap() {
-                child_entries.push(child_entry.unwrap());
-            }
-            dirs.insert(name.path(), child_entries);
-        }
-    }
+    let mut dirs: HashMap<&PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
+    let mut cur_directory: Vec<String> = Vec::new();
+    // for entry in WalkDir::new(&current_path).min_depth(1).max_depth(1) {
+    //     println!("{}", entry?.file_name().to_str().unwrap());
+    //     stdout.queue(cursor::MoveToColumn(0))?;
+    // }
+
+    add_to_dirs(&current_path, &mut dirs);
+    print_dir_contents(&current_path, Color::White);
+    // for entry in fs::read_dir(current_path).unwrap() {
+    //     cur_directory.push(entry.as_ref().unwrap().file_name().into_string().unwrap());
+    //     let name = entry.unwrap();
+    //     if name.file_type()?.is_dir() {
+    //         let mut child_entries = Vec::new();
+    //         for child_entry in fs::read_dir(name.path()).unwrap() {
+    //             child_entries.push(child_entry.unwrap());
+    //         }
+    //         dirs.insert(name.path(), child_entries);
+    //     }
+    // }
+
+    // Testing, see what is in dirs
+    // for (key, value) in dirs.iter() {
+    //     println!("Key: {:?}, DirEntry: {:?}", key, value);
+    //     stdout.execute(cursor::MoveToColumn(0))?;
+    // }
 
     // // Print out cur_directory
     // for entry in &cur_directory {
@@ -176,4 +184,45 @@ fn unhighlight_line(row: u16, contents: &str) -> Result<()> {
         .queue(cursor::MoveToColumn(0))?;
 
     Ok(())
+}
+
+// Adds the directory at the path to the given HashMap
+fn add_to_dirs<'a>(
+    current_dir: &'a PathBuf,
+    dirs: &mut HashMap<&'a PathBuf, Vec<walkdir::DirEntry>>,
+) {
+    // Check if path is a directory
+    if !current_dir.is_dir() {
+        println!("Not a directory!");
+        return;
+    }
+
+    // Add the contents of the directory to a vector
+    let mut contents: Vec<walkdir::DirEntry> = Vec::new();
+
+    // Use WalkDir
+    for entry in WalkDir::new(current_dir).min_depth(1).max_depth(1) {
+        contents.push(entry.unwrap());
+    }
+
+    dirs.insert(current_dir, contents);
+}
+
+// Prints the contents of the given directory
+fn print_dir_contents(dir: &PathBuf, color: Color) {
+    for entry in WalkDir::new(dir).min_depth(1).max_depth(1) {
+        stdout()
+            .queue(style::PrintStyledContent(
+                entry
+                    .unwrap()
+                    .file_name()
+                    .to_str()
+                    .unwrap()
+                    .with(Color::White),
+            ))
+            .unwrap()
+            .queue(cursor::MoveToNextLine(1))
+            .unwrap();
+    }
+    stdout().flush().unwrap();
 }
