@@ -7,7 +7,7 @@ use crossterm::{
 use std::collections::HashMap;
 use std::env;
 use std::io::{stdout, Write};
-use std::path::PathBuf;
+use std::path;
 use walkdir::WalkDir;
 
 struct CleanUp;
@@ -54,38 +54,11 @@ fn main() -> Result<()> {
     // Hashmap with each key being a directory and value being a vector of it's
     // contents
     // Read the contents of the current path and print them
-    let mut dirs: HashMap<&PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
+    let mut dirs: HashMap<&path::PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
     let mut cur_directory: Vec<String> = Vec::new();
-    // for entry in WalkDir::new(&current_path).min_depth(1).max_depth(1) {
-    //     println!("{}", entry?.file_name().to_str().unwrap());
-    //     stdout.queue(cursor::MoveToColumn(0))?;
-    // }
 
     add_to_dirs(&current_path, &mut dirs);
     print_dir_contents(&current_path, Color::White);
-    // for entry in fs::read_dir(current_path).unwrap() {
-    //     cur_directory.push(entry.as_ref().unwrap().file_name().into_string().unwrap());
-    //     let name = entry.unwrap();
-    //     if name.file_type()?.is_dir() {
-    //         let mut child_entries = Vec::new();
-    //         for child_entry in fs::read_dir(name.path()).unwrap() {
-    //             child_entries.push(child_entry.unwrap());
-    //         }
-    //         dirs.insert(name.path(), child_entries);
-    //     }
-    // }
-
-    // Testing, see what is in dirs
-    // for (key, value) in dirs.iter() {
-    //     println!("Key: {:?}, DirEntry: {:?}", key, value);
-    //     stdout.execute(cursor::MoveToColumn(0))?;
-    // }
-
-    // // Print out cur_directory
-    // for entry in &cur_directory {
-    //     stdout.queue(style::Print(entry)).unwrap();
-    //     stdout.queue(cursor::MoveToNextLine(1)).unwrap();
-    // }
 
     // Setup for loop
     let mut entries = get_strings_from_dir(&current_path, &dirs);
@@ -174,8 +147,8 @@ fn main() -> Result<()> {
 
 // Returns a vector of strings converted from DirEntries from the given directory
 fn get_strings_from_dir<'a>(
-    current_dir: &'a PathBuf,
-    dirs: &'a HashMap<&'a PathBuf, Vec<walkdir::DirEntry>>,
+    current_dir: &'a path::PathBuf,
+    dirs: &'a HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
 ) -> Vec<&'a str> {
     let strings: Vec<&str> = dirs
         .get(current_dir)
@@ -189,13 +162,18 @@ fn get_strings_from_dir<'a>(
 // Highlights the given row with the given color
 fn highlight_line(row: u16, color: Color, contents: &str) -> Result<()> {
     // Reprint the line?
-    let size = terminal::size().unwrap();
+    let (width, _) = terminal::size().unwrap();
 
-    stdout()
-        .queue(style::PrintStyledContent(
-            contents.with(Color::Black).on(Color::Blue),
-        ))?
-        .queue(cursor::MoveToColumn(0))?;
+    stdout().queue(style::PrintStyledContent(
+        contents.with(Color::Black).on(Color::Blue),
+    ))?;
+
+    for _ in 0..width - contents.len() as u16 {
+        stdout().queue(style::PrintStyledContent(
+            " ".with(Color::Black).on(Color::Blue),
+        ))?;
+    }
+    stdout().queue(cursor::MoveToColumn(0))?;
     stdout().flush()?;
 
     Ok(())
@@ -204,12 +182,14 @@ fn highlight_line(row: u16, color: Color, contents: &str) -> Result<()> {
 // Unhighlights the given row with the given color
 fn unhighlight_line(row: u16, contents: &str) -> Result<()> {
     // Reprint the line?
-    let size = terminal::size().unwrap();
+    let (width, _) = terminal::size().unwrap();
 
-    stdout()
-        .queue(style::Print(contents))?
-        .queue(cursor::MoveToColumn(0))?;
+    stdout().queue(style::Print(contents))?;
 
+    for _ in 0..width - contents.len() as u16 {
+        stdout().queue(style::Print(" "))?;
+    }
+    stdout().queue(cursor::MoveToColumn(0))?;
     stdout().flush()?;
 
     Ok(())
@@ -217,8 +197,8 @@ fn unhighlight_line(row: u16, contents: &str) -> Result<()> {
 
 // Adds the directory at the path to the given HashMap
 fn add_to_dirs<'a>(
-    current_dir: &'a PathBuf,
-    dirs: &mut HashMap<&'a PathBuf, Vec<walkdir::DirEntry>>,
+    current_dir: &'a path::PathBuf,
+    dirs: &mut HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
 ) {
     // Check if path is a directory
     if !current_dir.is_dir() {
@@ -238,7 +218,7 @@ fn add_to_dirs<'a>(
 }
 
 // Prints the contents of the given directory
-fn print_dir_contents(dir: &PathBuf, color: Color) {
+fn print_dir_contents(dir: &path::PathBuf, color: Color) {
     for entry in WalkDir::new(dir).min_depth(1).max_depth(1) {
         stdout()
             .queue(style::PrintStyledContent(
