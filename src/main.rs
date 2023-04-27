@@ -12,30 +12,32 @@ use walkdir::WalkDir;
 
 struct CleanUp;
 
-struct Tab<'a> {
-    dir_path: &'a path::PathBuf,
-    entries: &'a Vec<walkdir::DirEntry>,
+struct Tab {
+    dir_path: path::PathBuf,
+    entries: Vec<path::PathBuf>,
 }
 
-impl Tab<'_> {
+impl Tab {
+    fn new(dir_path: path::PathBuf) -> Tab {
+        let mut entries: Vec<path::PathBuf> = Vec::new();
+        for entry in WalkDir::new(&dir_path).min_depth(1).max_depth(1) {
+            entries.push(entry.unwrap().into_path())
+        }
+        Tab { dir_path, entries }
+    }
     // Draws the children
     fn draw(&self) {
-        for entry in WalkDir::new(self.dir_path).min_depth(1).max_depth(1) {
+        stdout()
+            .queue(style::SetForegroundColor(Color::White))
+            .unwrap();
+        for entry in &self.entries {
             stdout()
-                .queue(style::PrintStyledContent(
-                    entry
-                        .unwrap()
-                        .file_name()
-                        .to_str()
-                        .unwrap()
-                        .with(Color::White),
-                ))
+                .queue(style::Print(entry.file_name().unwrap().to_str().unwrap()))
                 .unwrap()
-                .queue(cursor::MoveDown(1))
-                .unwrap()
-                .queue(cursor::MoveToColumn(0))
+                .queue(cursor::MoveToNextLine(1))
                 .unwrap();
         }
+        stdout().queue(style::ResetColor).unwrap();
         stdout().flush().unwrap();
     }
 }
@@ -85,18 +87,26 @@ fn main() -> Result<()> {
     let mut dirs: HashMap<&path::PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
     let mut cur_directory_entries: Vec<String> = Vec::new();
     add_to_dirs(&current_path, &mut dirs);
-    let mut cur_tab = Tab {
-        dir_path: &current_path,
-        entries: dirs.get(&current_path).unwrap(),
-    };
+    // let mut cur_tab = Tab {
+    //     dir_path: current_path,
+    //     entries: dirs.get(&current_path).unwrap(),
+    // };
+
+    let copy_path = current_path.clone();
+    let cur_tab = Tab::new(copy_path);
 
     cur_tab.draw();
 
     // print_dir_contents(&current_path, Color::White);
 
     // Setup for loop
-    let mut entries = get_strings_from_dir(&current_path, &dirs);
+    // let mut entries = get_strings_from_dir(&current_path, &dirs);
     stdout.queue(cursor::MoveToRow(0))?;
+    let mut entries = cur_tab.entries;
+    let mut entries: Vec<&str> = entries
+        .iter()
+        .map(|entry| entry.file_name().unwrap().to_str().unwrap())
+        .collect();
     highlight_line(
         cursor::position().unwrap().1,
         Color::Blue,
@@ -127,7 +137,7 @@ fn main() -> Result<()> {
 
                     // print children if it is a dir
                     let children: &Vec<walkdir::DirEntry> = dirs.get(&current_path).unwrap();
-                    print_dir_contents(children[cursor_pos.1 as usize].path(), Color::White);
+                    // print_dir_contents(children[cursor_pos.1 as usize].path(), Color::White);
 
                     // print_dir_contents(dirs.get(current_path).unwrap()[cursor_pos.1]);
                 }
