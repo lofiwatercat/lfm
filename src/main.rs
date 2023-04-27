@@ -87,17 +87,13 @@ fn main() -> Result<()> {
     let mut dirs: HashMap<&path::PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
     let mut cur_directory_entries: Vec<String> = Vec::new();
     add_to_dirs(&current_path, &mut dirs);
-    // let mut cur_tab = Tab {
-    //     dir_path: current_path,
-    //     entries: dirs.get(&current_path).unwrap(),
-    // };
 
     let copy_path = current_path.clone();
+    // Current tab will show the contents of the current directory
     let cur_tab = Tab::new(copy_path);
 
+    // Prints the contents of the current tab
     cur_tab.draw();
-
-    // print_dir_contents(&current_path, Color::White);
 
     // Setup for loop
     // let mut entries = get_strings_from_dir(&current_path, &dirs);
