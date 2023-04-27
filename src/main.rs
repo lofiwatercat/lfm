@@ -12,29 +12,55 @@ use walkdir::WalkDir;
 
 struct CleanUp;
 
+enum Status {
+    primary,
+    secondary,
+    parent,
+}
+
 struct Tab {
     dir_path: path::PathBuf,
     entries: Vec<path::PathBuf>,
+    status: Status,
 }
 
 impl Tab {
-    fn new(dir_path: path::PathBuf) -> Tab {
+    fn new(dir_path: path::PathBuf, status: Status) -> Option<Tab> {
         let mut entries: Vec<path::PathBuf> = Vec::new();
         for entry in WalkDir::new(&dir_path).min_depth(1).max_depth(1) {
             entries.push(entry.unwrap().into_path())
         }
-        Tab { dir_path, entries }
+        Some(Tab {
+            dir_path,
+            entries,
+            status,
+        })
     }
+
     // Draws the children
     fn draw(&self) {
+        // Move the cursor to the right position.
+        // Primary -> All the way left.
+        // Secondary -> Middle
+        let secondary_offset = terminal::size().unwrap().0 / 2;
+        match self.status {
+            Status::primary => {
+                stdout().queue(cursor::MoveTo(0, 0)).unwrap();
+            }
+            Status::secondary => {
+                stdout().queue(cursor::MoveTo(secondary_offset, 0)).unwrap();
+            }
+            _ => {}
+        }
         stdout()
             .queue(style::SetForegroundColor(Color::White))
             .unwrap();
         for entry in &self.entries {
+            let (cursor_x, cursor_y) = cursor::position().unwrap();
             stdout()
                 .queue(style::Print(entry.file_name().unwrap().to_str().unwrap()))
                 .unwrap()
-                .queue(cursor::MoveToNextLine(1))
+                .queue(cursor::MoveTo(cursor_x, cursor_y + 1))
                 .unwrap();
         }
         stdout().queue(style::ResetColor).unwrap();
@@ -90,15 +116,17 @@ fn main() -> Result<()> {
 
     let copy_path = current_path.clone();
     // Current tab will show the contents of the current directory
-    let cur_tab = Tab::new(copy_path);
+    let primary_tab = Tab::new(copy_path, Status::secondary).unwrap();
+    // child_tab will either be Some or None
+    let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::secondary);
 
     // Prints the contents of the current tab
-    cur_tab.draw();
+    primary_tab.draw();
 
     // Setup for loop
     // let mut entries = get_strings_from_dir(&current_path, &dirs);
     stdout.queue(cursor::MoveToRow(0))?;
-    let mut entries = cur_tab.entries;
+    let mut entries = primary_tab.entries;
     let mut entries: Vec<&str> = entries
         .iter()
         .map(|entry| entry.file_name().unwrap().to_str().unwrap())
