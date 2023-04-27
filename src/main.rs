@@ -1,7 +1,7 @@
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEvent},
-    style::{self, Attribute, Color, Stylize},
+    style::{self, Color, Stylize},
     terminal, ExecutableCommand, QueueableCommand, Result,
 };
 use std::collections::HashMap;
@@ -11,6 +11,34 @@ use std::path;
 use walkdir::WalkDir;
 
 struct CleanUp;
+
+struct Tab<'a> {
+    dir_path: &'a path::PathBuf,
+    entries: &'a Vec<walkdir::DirEntry>,
+}
+
+impl Tab<'_> {
+    // Draws the children
+    fn draw(&self) {
+        for entry in WalkDir::new(self.dir_path).min_depth(1).max_depth(1) {
+            stdout()
+                .queue(style::PrintStyledContent(
+                    entry
+                        .unwrap()
+                        .file_name()
+                        .to_str()
+                        .unwrap()
+                        .with(Color::White),
+                ))
+                .unwrap()
+                .queue(cursor::MoveDown(1))
+                .unwrap()
+                .queue(cursor::MoveToColumn(0))
+                .unwrap();
+        }
+        stdout().flush().unwrap();
+    }
+}
 
 impl Drop for CleanUp {
     fn drop(&mut self) {
@@ -55,10 +83,16 @@ fn main() -> Result<()> {
     // contents
     // Read the contents of the current path and print them
     let mut dirs: HashMap<&path::PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
-    let mut cur_directory: Vec<String> = Vec::new();
-
+    let mut cur_directory_entries: Vec<String> = Vec::new();
     add_to_dirs(&current_path, &mut dirs);
-    print_dir_contents(&current_path, Color::White);
+    let mut cur_tab = Tab {
+        dir_path: &current_path,
+        entries: dirs.get(&current_path).unwrap(),
+    };
+
+    cur_tab.draw();
+
+    // print_dir_contents(&current_path, Color::White);
 
     // Setup for loop
     let mut entries = get_strings_from_dir(&current_path, &dirs);
@@ -90,6 +124,12 @@ fn main() -> Result<()> {
                     stdout.queue(cursor::MoveDown(1))?;
                     cursor_pos = cursor::position().unwrap();
                     highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
+
+                    // print children if it is a dir
+                    let children: &Vec<walkdir::DirEntry> = dirs.get(&current_path).unwrap();
+                    print_dir_contents(children[cursor_pos.1 as usize].path(), Color::White);
+
+                    // print_dir_contents(dirs.get(current_path).unwrap()[cursor_pos.1]);
                 }
                 KeyEvent {
                     code: KeyCode::Char('k'),
@@ -168,7 +208,7 @@ fn highlight_line(row: u16, color: Color, contents: &str) -> Result<()> {
         contents.with(Color::Black).on(Color::Blue),
     ))?;
 
-    for _ in 0..width - contents.len() as u16 {
+    for _ in 0..width / 2 - contents.len() as u16 {
         stdout().queue(style::PrintStyledContent(
             " ".with(Color::Black).on(Color::Blue),
         ))?;
@@ -218,7 +258,10 @@ fn add_to_dirs<'a>(
 }
 
 // Prints the contents of the given directory
-fn print_dir_contents(dir: &path::PathBuf, color: Color) {
+fn print_dir_contents(dir: &path::Path, color: Color) {
+    let (width, _) = terminal::size().unwrap();
+    stdout().queue(cursor::MoveToColumn(width / 2)).unwrap();
+    let (start_x, _) = cursor::position().unwrap();
     for entry in WalkDir::new(dir).min_depth(1).max_depth(1) {
         stdout()
             .queue(style::PrintStyledContent(
@@ -230,7 +273,9 @@ fn print_dir_contents(dir: &path::PathBuf, color: Color) {
                     .with(Color::White),
             ))
             .unwrap()
-            .queue(cursor::MoveToNextLine(1))
+            .queue(cursor::MoveDown(1))
+            .unwrap()
+            .queue(cursor::MoveToColumn(start_x))
             .unwrap();
     }
     stdout().flush().unwrap();
