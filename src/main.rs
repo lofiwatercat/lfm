@@ -13,9 +13,9 @@ use walkdir::WalkDir;
 struct CleanUp;
 
 enum Status {
-    primary,
-    secondary,
-    parent,
+    Primary,
+    Secondary,
+    Parent,
 }
 
 struct Tab {
@@ -45,10 +45,10 @@ impl Tab {
         let original_position = cursor::position().unwrap();
         let secondary_offset = terminal::size().unwrap().0 / 2;
         match self.status {
-            Status::primary => {
+            Status::Primary => {
                 stdout().queue(cursor::MoveTo(0, 0)).unwrap();
             }
-            Status::secondary => {
+            Status::Secondary => {
                 stdout().queue(cursor::MoveTo(secondary_offset, 0)).unwrap();
             }
             _ => {}
@@ -67,6 +67,31 @@ impl Tab {
         stdout()
             .queue(style::ResetColor)
             .unwrap()
+            .queue(cursor::MoveTo(original_position.0, original_position.1))
+            .unwrap();
+        stdout().flush().unwrap();
+    }
+
+    // Clears the tab. Primarily used for the secondary tab
+    fn clear(&self) {
+        let original_position = cursor::position().unwrap();
+        let secondary_offset = terminal::size().unwrap().0 / 2;
+        match self.status {
+            Status::Primary => (),
+            Status::Secondary => {
+                stdout().queue(cursor::MoveTo(secondary_offset, 0)).unwrap();
+            }
+            _ => {}
+        }
+        for entry in &self.entries {
+            let (cursor_x, cursor_y) = cursor::position().unwrap();
+            stdout()
+                .queue(terminal::Clear(terminal::ClearType::UntilNewLine))
+                .unwrap()
+                .queue(cursor::MoveTo(cursor_x, cursor_y + 1))
+                .unwrap();
+        }
+        stdout()
             .queue(cursor::MoveTo(original_position.0, original_position.1))
             .unwrap();
         stdout().flush().unwrap();
@@ -121,15 +146,15 @@ fn main() -> Result<()> {
 
     let copy_path = current_path.clone();
     // Current tab will show the contents of the current directory
-    let primary_tab = Tab::new(copy_path, Status::primary).unwrap();
+    let primary_tab = Tab::new(copy_path, Status::Primary).unwrap();
     // child_tab will either be Some or None
-    let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::secondary);
+    let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
 
     // Prints the contents of the current tab
     stdout.queue(cursor::Show);
     primary_tab.draw();
     match secondary_tab {
-        Some(i) => i.draw(),
+        Some(ref i) => i.draw(),
         None => (),
     }
 
@@ -165,6 +190,10 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
+                    match secondary_tab {
+                        Some(i) => i.clear(),
+                        None => (),
+                    };
                     unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
                     stdout.queue(cursor::MoveDown(1))?;
                     cursor_pos = cursor::position().unwrap();
@@ -172,31 +201,38 @@ fn main() -> Result<()> {
 
                     secondary_tab = Tab::new(
                         primary_tab.entries[cursor_pos.1 as usize].clone(),
-                        Status::secondary,
+                        Status::Secondary,
                     );
 
                     match secondary_tab {
-                        Some(i) => i.draw(),
+                        Some(ref i) => i.draw(),
                         None => (),
                     }
-
-                    // let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::secondary);
-
-                    // print children if it is a dir
-                    // let children: &Vec<walkdir::DirEntry> = dirs.get(&current_path).unwrap();
-                    // print_dir_contents(children[cursor_pos.1 as usize].path(), Color::White);
-
-                    // print_dir_contents(dirs.get(current_path).unwrap()[cursor_pos.1]);
                 }
                 KeyEvent {
                     code: KeyCode::Char('k'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
+                    match secondary_tab {
+                        Some(i) => i.clear(),
+                        None => (),
+                    };
+
                     unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
                     stdout.execute(cursor::MoveUp(1))?;
                     cursor_pos = cursor::position().unwrap();
                     highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
+
+                    secondary_tab = Tab::new(
+                        primary_tab.entries[cursor_pos.1 as usize].clone(),
+                        Status::Secondary,
+                    );
+
+                    match secondary_tab {
+                        Some(ref i) => i.draw(),
+                        None => (),
+                    }
                 }
                 KeyEvent {
                     code: KeyCode::Char('l'),

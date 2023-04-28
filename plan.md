@@ -16,3 +16,5 @@ Draw children as we scroll through the entries
 
 Refactor highlight
   * Need to to highlight where the tab actually is
+
+When printing, put directories first. Use a sort by function?
