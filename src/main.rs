@@ -42,6 +42,7 @@ impl Tab {
         // Move the cursor to the right position.
         // Primary -> All the way left.
         // Secondary -> Middle
+        let original_position = cursor::position().unwrap();
         let secondary_offset = terminal::size().unwrap().0 / 2;
         match self.status {
             Status::primary => {
@@ -63,7 +64,11 @@ impl Tab {
                 .queue(cursor::MoveTo(cursor_x, cursor_y + 1))
                 .unwrap();
         }
-        stdout().queue(style::ResetColor).unwrap();
+        stdout()
+            .queue(style::ResetColor)
+            .unwrap()
+            .queue(cursor::MoveTo(original_position.0, original_position.1))
+            .unwrap();
         stdout().flush().unwrap();
     }
 }
@@ -116,17 +121,22 @@ fn main() -> Result<()> {
 
     let copy_path = current_path.clone();
     // Current tab will show the contents of the current directory
-    let primary_tab = Tab::new(copy_path, Status::secondary).unwrap();
+    let primary_tab = Tab::new(copy_path, Status::primary).unwrap();
     // child_tab will either be Some or None
     let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::secondary);
 
     // Prints the contents of the current tab
+    stdout.queue(cursor::Show);
     primary_tab.draw();
+    match secondary_tab {
+        Some(i) => i.draw(),
+        None => (),
+    }
 
     // Setup for loop
     // let mut entries = get_strings_from_dir(&current_path, &dirs);
     stdout.queue(cursor::MoveToRow(0))?;
-    let mut entries = primary_tab.entries;
+    let mut entries = primary_tab.entries.clone();
     let mut entries: Vec<&str> = entries
         .iter()
         .map(|entry| entry.file_name().unwrap().to_str().unwrap())
@@ -138,6 +148,7 @@ fn main() -> Result<()> {
     )?;
 
     stdout.flush()?;
+    stdout.queue(cursor::Show).unwrap();
 
     // Process inputs
     loop {
@@ -159,8 +170,20 @@ fn main() -> Result<()> {
                     cursor_pos = cursor::position().unwrap();
                     highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
 
+                    secondary_tab = Tab::new(
+                        primary_tab.entries[cursor_pos.1 as usize].clone(),
+                        Status::secondary,
+                    );
+
+                    match secondary_tab {
+                        Some(i) => i.draw(),
+                        None => (),
+                    }
+
+                    // let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::secondary);
+
                     // print children if it is a dir
-                    let children: &Vec<walkdir::DirEntry> = dirs.get(&current_path).unwrap();
+                    // let children: &Vec<walkdir::DirEntry> = dirs.get(&current_path).unwrap();
                     // print_dir_contents(children[cursor_pos.1 as usize].path(), Color::White);
 
                     // print_dir_contents(dirs.get(current_path).unwrap()[cursor_pos.1]);
