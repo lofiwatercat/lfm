@@ -27,7 +27,13 @@ struct Tab {
 impl Tab {
     fn new(dir_path: path::PathBuf, status: Status) -> Option<Tab> {
         let mut entries: Vec<path::PathBuf> = Vec::new();
-        for entry in WalkDir::new(&dir_path).min_depth(1).max_depth(1) {
+        for entry in WalkDir::new(&dir_path)
+            .min_depth(1)
+            .max_depth(1)
+            .sort_by(|a, b| a.file_name().cmp(b.file_name()))
+            .sort_by_key(|a| a.path().is_file())
+            .into_iter()
+        {
             entries.push(entry.unwrap().into_path())
         }
         Some(Tab {

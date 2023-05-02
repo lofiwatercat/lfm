@@ -8,7 +8,7 @@ Implement tabs into the program.
   * Need to be able to create them given a path, and take care of the case where it's not a directory
   * Need to be able to draw the child_tab to the right side of the primary tab
 
-Draw children as we scroll through the entries
+Done - Draw children as we scroll through the entries
   * If the current row is a directory, then we draw the secondary tab
   * Need to fix cursor positioning when drawing
     - Currently, drawing a secondary tab doesn't move it back, causing problems when moving down and selecting another entry
@@ -17,4 +17,7 @@ Draw children as we scroll through the entries
 Refactor highlight
   * Need to to highlight where the tab actually is
 
-When printing, put directories first. Use a sort by function?
+Printing entries
+  * Need to put directories first at the top of the list
+  * Need to hide hidden files by default. Add option later to view them. 
+    - toggleable hotkey
