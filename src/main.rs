@@ -21,24 +21,41 @@ enum Status {
 struct Tab {
     dir_path: path::PathBuf,
     entries: Vec<path::PathBuf>,
+    current_entry: i32,
     status: Status,
 }
 
 impl Tab {
     fn new(dir_path: path::PathBuf, status: Status) -> Option<Tab> {
         let mut entries: Vec<path::PathBuf> = Vec::new();
+        let mut num_dirs = 0;
         for entry in WalkDir::new(&dir_path)
             .min_depth(1)
             .max_depth(1)
-            .sort_by(|a, b| a.file_name().cmp(b.file_name()))
+            // .sort_by(|a, b| a.file_name().cmp(b.file_name()))
             .sort_by_key(|a| a.path().is_file())
             .into_iter()
         {
-            entries.push(entry.unwrap().into_path())
+            let dir_entry = entry.unwrap();
+            if dir_entry.clone().into_path().is_dir() {
+                num_dirs += 1;
+            }
+            entries.push(dir_entry.into_path());
         }
+
+        // Reverse the order of the directories to be alphabetical
+        if num_dirs > 0 {
+            num_dirs -= 1;
+        }
+
+        for index in 0..num_dirs {
+            entries.swap(index, num_dirs - index);
+        }
+
         Some(Tab {
             dir_path,
             entries,
+            current_entry: 0,
             status,
         })
     }

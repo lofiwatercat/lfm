@@ -17,7 +17,20 @@ Done - Draw children as we scroll through the entries
 Refactor highlight
   * Need to to highlight where the tab actually is
 
-Printing entries
+DONE - Printing entries
   * Need to put directories first at the top of the list
   * Need to hide hidden files by default. Add option later to view them. 
     - toggleable hotkey
+
+TODO - Allow horizontal movement
+  * Add a current_entry to show the currently selected entry.
+    - allows for horizontal movement to remember previously seleected
+
+TODO - Refactor vertical movement
+  * Update current_entry and highlight the line
+
+TODO - Reorganize code
+  * Break things up into modules
+
+TODO - Refactor highlight (again)
+  * Add it as an implementation for tab
