@@ -382,39 +382,3 @@ fn main() -> Result<()> {
 
     Ok(())
 }
-
-// Returns a vector of strings converted from DirEntries from the given directory
-// fn get_strings_from_dir<'a>(
-//     current_dir: &'a path::PathBuf,
-//     dirs: &'a HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
-// ) -> Vec<&'a str> {
-//     let strings: Vec<&str> = dirs
-//         .get(current_dir)
-//         .unwrap()
-//         .iter()
-//         .map(|dir_entry| dir_entry.file_name().to_str().unwrap())
-//         .collect();
-//     strings
-// }
-
-// Adds the directory at the path to the given HashMap
-// fn add_to_dirs<'a>(
-//     current_dir: &'a path::PathBuf,
-//     dirs: &mut HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
-// ) {
-//     // Check if path is a directory
-//     if !current_dir.is_dir() {
-//         println!("Not a directory!");
-//         return;
-//     }
-
-//     // Add the contents of the directory to a vector
-//     let mut contents: Vec<walkdir::DirEntry> = Vec::new();
-
-//     // Use WalkDir
-//     for entry in WalkDir::new(current_dir).min_depth(1).max_depth(1) {
-//         contents.push(entry.unwrap());
-//     }
-
-//     dirs.insert(current_dir, contents);
-// }
