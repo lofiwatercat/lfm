@@ -4,7 +4,7 @@ use crossterm::{
     style::{self, Color, Stylize},
     terminal, ExecutableCommand, QueueableCommand, Result,
 };
-use std::collections::HashMap;
+// use std::collections::HashMap;
 use std::env;
 use std::io::{stdout, Write};
 use std::path;
@@ -20,6 +20,7 @@ enum Status {
 
 struct Tab {
     dir_path: path::PathBuf,
+    parent_path: path::PathBuf,
     entries: Vec<path::PathBuf>,
     entries_str: Vec<String>,
     current_entry_index: i32,
@@ -46,6 +47,25 @@ impl Tab {
             ))?;
         }
 
+        stdout().queue(cursor::MoveTo(original_position.0, original_position.1))?;
+
+        Ok(())
+    }
+
+    fn unhighlight_line(&self) -> Result<()> {
+        let original_position = cursor::position().unwrap();
+        let secondary_offset = terminal::size().unwrap().0 / 2;
+
+        let (mut width, _) = terminal::size().unwrap();
+        width /= 2;
+
+        let contents = &self.entries_str[self.current_entry_index as usize];
+
+        stdout().queue(style::Print(contents))?;
+
+        for _ in 0..width - contents.len() as u16 {
+            stdout().queue(style::Print(" "))?;
+        }
         stdout().queue(cursor::MoveTo(original_position.0, original_position.1))?;
 
         Ok(())
@@ -82,8 +102,11 @@ impl Tab {
             entries_str.push(entry.file_name().unwrap().to_str().unwrap().to_string());
         }
 
+        let parent_path = dir_path.parent().unwrap().to_path_buf();
+
         Some(Tab {
             dir_path,
+            parent_path,
             entries,
             entries_str,
             current_entry_index: 0,
@@ -194,9 +217,9 @@ fn main() -> Result<()> {
     // Hashmap with each key being a directory and value being a vector of it's
     // contents
     // Read the contents of the current path and print them
-    let mut dirs: HashMap<&path::PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
-    let mut cur_directory_entries: Vec<String> = Vec::new();
-    add_to_dirs(&current_path, &mut dirs);
+    // let mut dirs: HashMap<&path::PathBuf, Vec<walkdir::DirEntry>> = HashMap::new();
+    // let mut cur_directory_entries: Vec<String> = Vec::new();
+    // add_to_dirs(&current_path, &mut dirs);
 
     let copy_path = current_path.clone();
     // Current tab will show the contents of the current directory
@@ -204,8 +227,10 @@ fn main() -> Result<()> {
     // child_tab will either be Some or None
     let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
 
+    let mut parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
+
     // Prints the contents of the current tab
-    stdout.queue(cursor::Show);
+    stdout.queue(cursor::Show).unwrap();
     primary_tab.draw();
     match secondary_tab {
         Some(ref i) => i.draw(),
@@ -215,16 +240,13 @@ fn main() -> Result<()> {
     // Setup for loop
     // let mut entries = get_strings_from_dir(&current_path, &dirs);
     stdout.queue(cursor::MoveToRow(0))?;
-    let mut entries = primary_tab.entries.clone();
-    let mut entries: Vec<&str> = entries
-        .iter()
-        .map(|entry| entry.file_name().unwrap().to_str().unwrap())
-        .collect();
-    highlight_line(
-        cursor::position().unwrap().1,
-        Color::Blue,
-        &entries[cursor::position().unwrap().1 as usize],
-    )?;
+    // let mut entries = primary_tab.entries.clone();
+    // let mut entries: Vec<&str> = entries
+    //     .iter()
+    //     .map(|entry| entry.file_name().unwrap().to_str().unwrap())
+    //     .collect();
+
+    primary_tab.highlight_line().unwrap();
 
     stdout.flush()?;
     stdout.queue(cursor::Show).unwrap();
@@ -248,10 +270,9 @@ fn main() -> Result<()> {
                         Some(tab) => tab.clear(),
                         None => (),
                     };
-                    unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
+                    primary_tab.unhighlight_line().unwrap();
                     stdout.execute(cursor::MoveDown(1))?;
                     cursor_pos = cursor::position().unwrap();
-                    // highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
                     primary_tab.current_entry_index += 1;
                     primary_tab.highlight_line().unwrap();
 
@@ -275,12 +296,11 @@ fn main() -> Result<()> {
                         None => (),
                     };
 
-                    unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
+                    primary_tab.unhighlight_line().unwrap();
                     stdout.execute(cursor::MoveUp(1))?;
                     cursor_pos = cursor::position().unwrap();
                     primary_tab.current_entry_index -= 1;
                     primary_tab.highlight_line().unwrap();
-                    highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
 
                     secondary_tab = Tab::new(
                         primary_tab.entries[cursor_pos.1 as usize].clone(),
@@ -297,14 +317,41 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    stdout.execute(cursor::MoveRight(1))?;
+                    match secondary_tab {
+                        Some(ref tab) => {
+                            primary_tab.clear();
+                            tab.clear();
+                            parent_tab = primary_tab;
+                            parent_tab.status = Status::Parent;
+                            primary_tab = Tab::new(tab.dir_path.clone(), Status::Primary).unwrap();
+                        }
+                        None => (),
+                    }
+                    primary_tab.draw();
+                    stdout.queue(cursor::MoveTo(0, 0)).unwrap();
+                    primary_tab.highlight_line().unwrap();
+
+                    secondary_tab = Tab::new(
+                        primary_tab.entries[cursor_pos.1 as usize].clone(),
+                        Status::Secondary,
+                    );
+
+                    match secondary_tab {
+                        Some(ref tab) => {
+                            tab.draw();
+                        }
+                        None => (),
+                    }
                 }
                 KeyEvent {
                     code: KeyCode::Char('h'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    stdout.execute(cursor::MoveLeft(1))?;
+                    secondary_tab = Some(primary_tab);
+                    primary_tab = parent_tab;
+                    primary_tab.status = Status::Primary;
+                    parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
                 }
                 KeyEvent {
                     code: KeyCode::Char('t'),
@@ -313,8 +360,8 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    entries = get_strings_from_dir(&current_path, &dirs);
-                    highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
+                    // entries = get_strings_from_dir(&current_path, &dirs);
+                    primary_tab.highlight_line().unwrap();
                 }
                 KeyEvent {
                     code: KeyCode::Char('r'),
@@ -323,8 +370,8 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    entries = get_strings_from_dir(&current_path, &dirs);
-                    unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
+                    // entries = get_strings_from_dir(&current_path, &dirs);
+                    primary_tab.highlight_line().unwrap();
                 }
                 _ => {
                     println!("{:?}\r", event)
@@ -337,73 +384,37 @@ fn main() -> Result<()> {
 }
 
 // Returns a vector of strings converted from DirEntries from the given directory
-fn get_strings_from_dir<'a>(
-    current_dir: &'a path::PathBuf,
-    dirs: &'a HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
-) -> Vec<&'a str> {
-    let strings: Vec<&str> = dirs
-        .get(current_dir)
-        .unwrap()
-        .iter()
-        .map(|dir_entry| dir_entry.file_name().to_str().unwrap())
-        .collect();
-    strings
-}
-
-// Highlights the given row with the given color
-fn highlight_line(row: u16, color: Color, contents: &str) -> Result<()> {
-    // Reprint the line?
-    let (width, _) = terminal::size().unwrap();
-
-    stdout().queue(style::PrintStyledContent(
-        contents.with(Color::Black).on(Color::Blue),
-    ))?;
-
-    for _ in 0..width / 2 - contents.len() as u16 {
-        stdout().queue(style::PrintStyledContent(
-            " ".with(Color::Black).on(Color::Blue),
-        ))?;
-    }
-    stdout().queue(cursor::MoveToColumn(0))?;
-    stdout().flush()?;
-
-    Ok(())
-}
-
-// Unhighlights the given row with the given color
-fn unhighlight_line(row: u16, contents: &str) -> Result<()> {
-    // Reprint the line?
-    let (width, _) = terminal::size().unwrap();
-
-    stdout().queue(style::Print(contents))?;
-
-    for _ in 0..width - contents.len() as u16 {
-        stdout().queue(style::Print(" "))?;
-    }
-    stdout().queue(cursor::MoveToColumn(0))?;
-    stdout().flush()?;
-
-    Ok(())
-}
+// fn get_strings_from_dir<'a>(
+//     current_dir: &'a path::PathBuf,
+//     dirs: &'a HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
+// ) -> Vec<&'a str> {
+//     let strings: Vec<&str> = dirs
+//         .get(current_dir)
+//         .unwrap()
+//         .iter()
+//         .map(|dir_entry| dir_entry.file_name().to_str().unwrap())
+//         .collect();
+//     strings
+// }
 
 // Adds the directory at the path to the given HashMap
-fn add_to_dirs<'a>(
-    current_dir: &'a path::PathBuf,
-    dirs: &mut HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
-) {
-    // Check if path is a directory
-    if !current_dir.is_dir() {
-        println!("Not a directory!");
-        return;
-    }
+// fn add_to_dirs<'a>(
+//     current_dir: &'a path::PathBuf,
+//     dirs: &mut HashMap<&'a path::PathBuf, Vec<walkdir::DirEntry>>,
+// ) {
+//     // Check if path is a directory
+//     if !current_dir.is_dir() {
+//         println!("Not a directory!");
+//         return;
+//     }
 
-    // Add the contents of the directory to a vector
-    let mut contents: Vec<walkdir::DirEntry> = Vec::new();
+//     // Add the contents of the directory to a vector
+//     let mut contents: Vec<walkdir::DirEntry> = Vec::new();
 
-    // Use WalkDir
-    for entry in WalkDir::new(current_dir).min_depth(1).max_depth(1) {
-        contents.push(entry.unwrap());
-    }
+//     // Use WalkDir
+//     for entry in WalkDir::new(current_dir).min_depth(1).max_depth(1) {
+//         contents.push(entry.unwrap());
+//     }
 
-    dirs.insert(current_dir, contents);
-}
+//     dirs.insert(current_dir, contents);
+// }

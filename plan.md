@@ -25,17 +25,20 @@ DONE - Printing entries
 TODO - Allow horizontal movement
   * Add a current_entry to show the currently selected entry.
     - allows for horizontal movement to remember previously seleected
+  * Update primary tab, secondary tab, and parent tab
 
-TODO - Refactor vertical movement
+DONE - Refactor vertical movement
   * Update current_entry and highlight the line
 
 TODO - Reorganize code
   * Break things up into modules
 
-TODO - Refactor highlight (again)
+DONE - Refactor highlight (again)
   * Add it as an implementation for tab
 
-TODO - Add commands?
+TODO - Refactor loop
+  * Primary tab -> Current tab
+  * Current tab will be updated with horizontal movement
 
-DONE - Refactored highlight again
-  * Now a function of tab
+TODO - Parent tab
+
