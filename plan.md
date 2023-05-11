@@ -20,12 +20,12 @@ DONE - Refactor highlight
 DONE - Printing entries
   * Need to put directories first at the top of the list
   * Need to hide hidden files by default. Add option later to view them. 
-    - toggleable hotkey
 
 TODO - Allow horizontal movement
   * Add a current_entry to show the currently selected entry.
     - allows for horizontal movement to remember previously seleected
   * Update primary tab, secondary tab, and parent tab
+  * Need horizontal movement back
 
 DONE - Refactor vertical movement
   * Update current_entry and highlight the line
@@ -41,4 +41,5 @@ TODO - Refactor loop
   * Current tab will be updated with horizontal movement
 
 TODO - Parent tab
+  * Much smaller than primary and secondary tab
 
