@@ -21,13 +21,39 @@ enum Status {
 struct Tab {
     dir_path: path::PathBuf,
     entries: Vec<path::PathBuf>,
-    current_entry: i32,
+    entries_str: Vec<String>,
+    current_entry_index: i32,
     status: Status,
 }
 
 impl Tab {
+    fn highlight_line(&self) -> Result<()> {
+        let original_position = cursor::position().unwrap();
+        let secondary_offset = terminal::size().unwrap().0 / 2;
+
+        let (mut width, _) = terminal::size().unwrap();
+        width /= 2;
+
+        let contents = &self.entries_str[self.current_entry_index as usize];
+
+        stdout().queue(style::PrintStyledContent(
+            contents.clone().with(Color::Black).on(Color::Blue),
+        ))?;
+
+        for _ in 0..width - contents.len() as u16 {
+            stdout().queue(style::PrintStyledContent(
+                " ".with(Color::Black).on(Color::Blue),
+            ))?;
+        }
+
+        stdout().queue(cursor::MoveTo(original_position.0, original_position.1))?;
+
+        Ok(())
+    }
+
     fn new(dir_path: path::PathBuf, status: Status) -> Option<Tab> {
         let mut entries: Vec<path::PathBuf> = Vec::new();
+        let mut entries_str: Vec<String> = Vec::new();
         let mut num_dirs = 0;
         for entry in WalkDir::new(&dir_path)
             .min_depth(1)
@@ -52,10 +78,15 @@ impl Tab {
             entries.swap(index, num_dirs - index);
         }
 
+        for entry in &entries {
+            entries_str.push(entry.file_name().unwrap().to_str().unwrap().to_string());
+        }
+
         Some(Tab {
             dir_path,
             entries,
-            current_entry: 0,
+            entries_str,
+            current_entry_index: 0,
             status,
         })
     }
@@ -169,7 +200,7 @@ fn main() -> Result<()> {
 
     let copy_path = current_path.clone();
     // Current tab will show the contents of the current directory
-    let primary_tab = Tab::new(copy_path, Status::Primary).unwrap();
+    let mut primary_tab = Tab::new(copy_path, Status::Primary).unwrap();
     // child_tab will either be Some or None
     let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
 
@@ -214,13 +245,15 @@ fn main() -> Result<()> {
                     ..
                 } => {
                     match secondary_tab {
-                        Some(i) => i.clear(),
+                        Some(tab) => tab.clear(),
                         None => (),
                     };
                     unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
-                    stdout.queue(cursor::MoveDown(1))?;
+                    stdout.execute(cursor::MoveDown(1))?;
                     cursor_pos = cursor::position().unwrap();
-                    highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
+                    // highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
+                    primary_tab.current_entry_index += 1;
+                    primary_tab.highlight_line().unwrap();
 
                     secondary_tab = Tab::new(
                         primary_tab.entries[cursor_pos.1 as usize].clone(),
@@ -228,7 +261,7 @@ fn main() -> Result<()> {
                     );
 
                     match secondary_tab {
-                        Some(ref i) => i.draw(),
+                        Some(ref tab) => tab.draw(),
                         None => (),
                     }
                 }
@@ -238,13 +271,15 @@ fn main() -> Result<()> {
                     ..
                 } => {
                     match secondary_tab {
-                        Some(i) => i.clear(),
+                        Some(tab) => tab.clear(),
                         None => (),
                     };
 
                     unhighlight_line(cursor_pos.1, &entries[cursor_pos.1 as usize])?;
                     stdout.execute(cursor::MoveUp(1))?;
                     cursor_pos = cursor::position().unwrap();
+                    primary_tab.current_entry_index -= 1;
+                    primary_tab.highlight_line().unwrap();
                     highlight_line(cursor_pos.1, Color::Blue, &entries[cursor_pos.1 as usize])?;
 
                     secondary_tab = Tab::new(
@@ -371,28 +406,4 @@ fn add_to_dirs<'a>(
     }
 
     dirs.insert(current_dir, contents);
-}
-
-// Prints the contents of the given directory
-fn print_dir_contents(dir: &path::Path, color: Color) {
-    let (width, _) = terminal::size().unwrap();
-    stdout().queue(cursor::MoveToColumn(width / 2)).unwrap();
-    let (start_x, _) = cursor::position().unwrap();
-    for entry in WalkDir::new(dir).min_depth(1).max_depth(1) {
-        stdout()
-            .queue(style::PrintStyledContent(
-                entry
-                    .unwrap()
-                    .file_name()
-                    .to_str()
-                    .unwrap()
-                    .with(Color::White),
-            ))
-            .unwrap()
-            .queue(cursor::MoveDown(1))
-            .unwrap()
-            .queue(cursor::MoveToColumn(start_x))
-            .unwrap();
-    }
-    stdout().flush().unwrap();
 }

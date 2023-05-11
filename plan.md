@@ -14,7 +14,7 @@ Done - Draw children as we scroll through the entries
     - Currently, drawing a secondary tab doesn't move it back, causing problems when moving down and selecting another entry
   * Need to clear the secondary tab as we scroll
 
-Refactor highlight
+DONE - Refactor highlight
   * Need to to highlight where the tab actually is
 
 DONE - Printing entries
@@ -34,3 +34,8 @@ TODO - Reorganize code
 
 TODO - Refactor highlight (again)
   * Add it as an implementation for tab
+
+TODO - Add commands?
+
+DONE - Refactored highlight again
+  * Now a function of tab
