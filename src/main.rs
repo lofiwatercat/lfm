@@ -156,7 +156,9 @@ impl Tab {
         let original_position = cursor::position().unwrap();
         let secondary_offset = terminal::size().unwrap().0 / 2;
         match self.status {
-            Status::Primary => (),
+            Status::Primary => {
+                stdout().queue(cursor::MoveTo(0, 0)).unwrap();
+            }
             Status::Secondary => {
                 stdout().queue(cursor::MoveTo(secondary_offset, 0)).unwrap();
             }
@@ -323,12 +325,16 @@ fn main() -> Result<()> {
                     match secondary_tab {
                         Some(ref tab) => {
                             tab.clear();
-                            parent_tab = primary_tab;
+                            parent_tab = primary_tab.clone();
                             parent_tab.status = Status::Parent;
-                            primary_tab = Tab::new(tab.dir_path.clone(), Status::Primary).unwrap();
+                            // primary_tab = Tab::new(tab.dir_path.clone(), Status::Primary).unwrap();
+                            primary_tab = tab.clone();
                         }
                         None => (),
                     }
+                    // Update primary tab to be primary tab after cloning secondary tab
+                    primary_tab.status = Status::Primary;
+                    primary_tab.clear();
                     primary_tab.draw();
                     stdout.queue(cursor::MoveTo(0, 0)).unwrap();
                     primary_tab.highlight_line().unwrap();
