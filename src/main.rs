@@ -356,6 +356,7 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
+                    // Clear the old tabs
                     primary_tab.clear();
                     match secondary_tab {
                         Some(ref tab) => {
@@ -368,12 +369,23 @@ fn main() -> Result<()> {
                     let current_dir = primary_tab.dir_path;
 
                     primary_tab = parent_tab.clone();
+                    parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
 
                     let current_index = primary_tab
                         .entries
                         .iter()
                         .position(|entry| entry == &current_dir)
                         .unwrap();
+
+                    let current_dir = primary_tab.dir_path.clone();
+
+                    let parent_index = parent_tab
+                        .entries
+                        .iter()
+                        .position(|entry| entry == &current_dir)
+                        .unwrap();
+
+                    parent_tab.current_entry_index = parent_index as i32;
 
                     primary_tab.current_entry_index = current_index as i32;
                     primary_tab.status = Status::Primary;
