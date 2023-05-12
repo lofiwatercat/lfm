@@ -234,7 +234,7 @@ fn main() -> Result<()> {
     let mut parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
 
     // Prints the contents of the current tab
-    stdout.queue(cursor::Show).unwrap();
+    // stdout.queue(cursor::Show).unwrap();
     primary_tab.draw();
     match secondary_tab {
         Some(ref i) => i.draw(),
@@ -253,7 +253,7 @@ fn main() -> Result<()> {
     primary_tab.highlight_line().unwrap();
 
     stdout.flush()?;
-    stdout.queue(cursor::Show).unwrap();
+    // stdout.queue(cursor::Show).unwrap();
 
     // Process inputs
     loop {
@@ -301,10 +301,10 @@ fn main() -> Result<()> {
                     };
 
                     primary_tab.unhighlight_line().unwrap();
-                    stdout.execute(cursor::MoveUp(1))?;
+                    stdout.execute(cursor::MoveUp(1)).expect("Couldn't move up");
                     cursor_pos = cursor::position().unwrap();
                     primary_tab.current_entry_index -= 1;
-                    primary_tab.highlight_line().unwrap();
+                    primary_tab.highlight_line().expect("Couldn't highlight");
 
                     secondary_tab = Tab::new(
                         primary_tab.entries[cursor_pos.1 as usize].clone(),
@@ -332,17 +332,18 @@ fn main() -> Result<()> {
                         }
                         None => (),
                     }
+
                     // Update primary tab to be primary tab after cloning secondary tab
                     primary_tab.status = Status::Primary;
                     primary_tab.clear();
                     primary_tab.draw();
-                    stdout.queue(cursor::MoveTo(0, 0)).unwrap();
+                    stdout
+                        .queue(cursor::MoveTo(0, primary_tab.current_entry_index as u16))
+                        .unwrap();
                     primary_tab.highlight_line().unwrap();
 
-                    secondary_tab = Tab::new(
-                        primary_tab.entries[cursor_pos.1 as usize].clone(),
-                        Status::Secondary,
-                    );
+                    secondary_tab =
+                        Tab::new(primary_tab.entries[0 as usize].clone(), Status::Secondary);
 
                     match secondary_tab {
                         Some(ref tab) => {
@@ -356,6 +357,7 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
+                    let old_index = primary_tab.current_entry_index;
                     // Clear the old tabs
                     primary_tab.clear();
                     match secondary_tab {
@@ -369,13 +371,15 @@ fn main() -> Result<()> {
                     let current_dir = primary_tab.dir_path;
 
                     primary_tab = parent_tab.clone();
-                    parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
+                    // print!("{:?}", primary_tab.parent_path);
+                    parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent)
+                        .expect("Couldn't make parent tab");
 
                     let current_index = primary_tab
                         .entries
                         .iter()
                         .position(|entry| entry == &current_dir)
-                        .unwrap();
+                        .expect("Couldn't make current index");
 
                     let current_dir = primary_tab.dir_path.clone();
 
@@ -383,7 +387,7 @@ fn main() -> Result<()> {
                         .entries
                         .iter()
                         .position(|entry| entry == &current_dir)
-                        .unwrap();
+                        .expect("Couldn't make parent index");
 
                     parent_tab.current_entry_index = parent_index as i32;
 
@@ -394,6 +398,10 @@ fn main() -> Result<()> {
                         Status::Secondary,
                     );
 
+                    match secondary_tab {
+                        Some(ref mut tab) => tab.current_entry_index = old_index,
+                        None => (),
+                    }
                     primary_tab.draw();
 
                     // primary_tab = Tab::new(primary_tab.parent_path, Status::Parent).unwrap();
@@ -409,9 +417,9 @@ fn main() -> Result<()> {
 
                     stdout
                         .queue(cursor::MoveToRow(primary_tab.current_entry_index as u16))
-                        .unwrap();
+                        .expect("Couldn't move cursor");
 
-                    primary_tab.highlight_line().unwrap();
+                    primary_tab.highlight_line().expect("Couldn't highlight");
                 }
                 KeyEvent {
                     code: KeyCode::Char('t'),
