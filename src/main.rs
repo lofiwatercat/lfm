@@ -12,12 +12,14 @@ use walkdir::WalkDir;
 
 struct CleanUp;
 
+#[derive(Clone)]
 enum Status {
     Primary,
     Secondary,
     Parent,
 }
 
+#[derive(Clone)]
 struct Tab {
     dir_path: path::PathBuf,
     parent_path: path::PathBuf,
@@ -317,9 +319,9 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
+                    primary_tab.clear();
                     match secondary_tab {
                         Some(ref tab) => {
-                            primary_tab.clear();
                             tab.clear();
                             parent_tab = primary_tab;
                             parent_tab.status = Status::Parent;
@@ -348,10 +350,50 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    secondary_tab = Some(primary_tab);
-                    primary_tab = parent_tab;
+                    primary_tab.clear();
+                    match secondary_tab {
+                        Some(ref tab) => {
+                            tab.clear();
+                        }
+                        None => (),
+                    }
+
+                    // Remember index of the current tab before we go back
+                    let current_dir = primary_tab.dir_path;
+
+                    primary_tab = parent_tab.clone();
+
+                    let current_index = primary_tab
+                        .entries
+                        .iter()
+                        .position(|entry| entry == &current_dir)
+                        .unwrap();
+
+                    primary_tab.current_entry_index = current_index as i32;
                     primary_tab.status = Status::Primary;
-                    parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
+                    secondary_tab = Tab::new(
+                        primary_tab.entries[primary_tab.current_entry_index as usize].clone(),
+                        Status::Secondary,
+                    );
+
+                    primary_tab.draw();
+
+                    // primary_tab = Tab::new(primary_tab.parent_path, Status::Parent).unwrap();
+                    // secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
+                    // primary_tab.draw();
+
+                    match secondary_tab {
+                        Some(ref tab) => {
+                            tab.draw();
+                        }
+                        None => (),
+                    }
+
+                    stdout
+                        .queue(cursor::MoveToRow(primary_tab.current_entry_index as u16))
+                        .unwrap();
+
+                    primary_tab.highlight_line().unwrap();
                 }
                 KeyEvent {
                     code: KeyCode::Char('t'),
@@ -360,7 +402,6 @@ fn main() -> Result<()> {
                 } => {
                     // Grab a line
                     stdout.execute(cursor::MoveToColumn(0))?;
-                    // entries = get_strings_from_dir(&current_path, &dirs);
                     primary_tab.highlight_line().unwrap();
                 }
                 KeyEvent {
