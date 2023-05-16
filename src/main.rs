@@ -23,6 +23,8 @@ enum Status {
 struct Tab {
     dir_path: path::PathBuf,
     parent_path: path::PathBuf,
+    parent_tab: Option<Box<Tab>>,
+    child_tabs: Option<Vec<Tab>>,
     entries: Vec<path::PathBuf>,
     entries_str: Vec<String>,
     current_entry_index: i32,
@@ -108,12 +110,27 @@ impl Tab {
 
         Some(Tab {
             dir_path,
+            parent_tab: None,
             parent_path,
+            child_tabs: None,
             entries,
             entries_str,
             current_entry_index: 0,
             status,
         })
+    }
+
+    // Updates the parent_tab and the child_tabs
+    fn update(&mut self) {
+        let parent_tab = Tab::new(self.parent_path.clone(), Status::Parent).unwrap();
+        self.parent_tab = Some(Box::new(parent_tab));
+
+        let mut child_tabs: Vec<Tab> = Vec::new();
+        for entry in &self.entries {
+            child_tabs.push(Tab::new(entry.clone(), Status::Secondary).unwrap());
+        }
+
+        self.child_tabs = Some(child_tabs);
     }
 
     // Draws the children

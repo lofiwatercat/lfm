@@ -45,3 +45,4 @@ TODO - Parent tab
 
 TODO - Fix going back too far breaking
 
+TODO - REFACTOR tabs to be persistent. Like linked nodes
