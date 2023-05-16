@@ -24,7 +24,7 @@ struct Tab {
     dir_path: path::PathBuf,
     parent_path: path::PathBuf,
     parent_tab: Option<Box<Tab>>,
-    child_tabs: Option<Vec<Tab>>,
+    child_tabs: Vec<Option<Tab>>,
     entries: Vec<path::PathBuf>,
     entries_str: Vec<String>,
     current_entry_index: i32,
@@ -112,7 +112,7 @@ impl Tab {
             dir_path,
             parent_tab: None,
             parent_path,
-            child_tabs: None,
+            child_tabs: Vec::new(),
             entries,
             entries_str,
             current_entry_index: 0,
@@ -126,9 +126,14 @@ impl Tab {
 
         parent_tab.update_child_tabs();
 
-        for mut tab in parent_tab.child_tabs.as_mut().unwrap().iter_mut() {
-            if &tab.dir_path == &self.dir_path {
-                tab = self;
+        for tab_option in parent_tab.child_tabs.iter_mut() {
+            match tab_option {
+                Some(child_tab) => {
+                    if &child_tab.dir_path == &self.dir_path {
+                        child_tab = self;
+                    }
+                }
+                None => (),
             }
         }
 
@@ -136,12 +141,12 @@ impl Tab {
     }
 
     fn update_child_tabs(&mut self) {
-        let mut child_tabs: Vec<Tab> = Vec::new();
+        let mut child_tabs: Vec<Option<Tab>> = Vec::new();
         for entry in &self.entries {
-            child_tabs.push(Tab::new(entry.clone(), Status::Secondary).unwrap());
+            child_tabs.push(Tab::new(entry.clone(), Status::Secondary));
         }
 
-        self.child_tabs = Some(child_tabs);
+        self.child_tabs = child_tabs;
     }
 
     // Draws the children
@@ -259,13 +264,14 @@ fn main() -> Result<()> {
     // child_tab will either be Some or None
     primary_tab.update_child_tabs();
     primary_tab.update_parent();
-    let mut secondary_tab = Some(&primary_tab.child_tabs.as_mut().unwrap()[0]);
+    // let secondary_tab = Some(&primary_tab.child_tabs.as_ref().unwrap()[0]);
+    let secondary_tab: Option<Tab> = primary_tab.child_tabs[0];
+
     // let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
 
-    let mut parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
+    let parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
 
     // Prints the contents of the current tab
-    // stdout.queue(cursor::Show).unwrap();
     primary_tab.draw();
     match secondary_tab {
         Some(ref i) => i.draw(),
@@ -273,18 +279,11 @@ fn main() -> Result<()> {
     }
 
     // Setup for loop
-    // let mut entries = get_strings_from_dir(&current_path, &dirs);
     stdout.queue(cursor::MoveToRow(0))?;
-    // let mut entries = primary_tab.entries.clone();
-    // let mut entries: Vec<&str> = entries
-    //     .iter()
-    //     .map(|entry| entry.file_name().unwrap().to_str().unwrap())
-    //     .collect();
 
     primary_tab.highlight_line().unwrap();
 
     stdout.flush()?;
-    // stdout.queue(cursor::Show).unwrap();
 
     // Process inputs
     loop {
@@ -301,15 +300,16 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    //     match secondary_tab {
-                    //         Some(tab) => tab.clear(),
-                    //         None => (),
-                    //     };
-                    //     primary_tab.unhighlight_line().unwrap();
-                    //     stdout.execute(cursor::MoveDown(1))?;
-                    //     cursor_pos = cursor::position().unwrap();
-                    //     primary_tab.current_entry_index += 1;
-                    //     primary_tab.highlight_line().unwrap();
+                    // Clear secondary tab
+                    match secondary_tab {
+                        Some(tab) => tab.clear(),
+                        None => (),
+                    };
+                    primary_tab.unhighlight_line().unwrap();
+                    stdout.execute(cursor::MoveDown(1))?;
+                    cursor_pos = cursor::position().unwrap();
+                    primary_tab.current_entry_index += 1;
+                    primary_tab.highlight_line().unwrap();
 
                     //     secondary_tab = Tab::new(
                     //         primary_tab.entries[cursor_pos.1 as usize].clone(),
