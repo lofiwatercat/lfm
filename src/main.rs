@@ -257,7 +257,10 @@ fn main() -> Result<()> {
     // Current tab will show the contents of the current directory
     let mut primary_tab = Tab::new(copy_path, Status::Primary).unwrap();
     // child_tab will either be Some or None
-    let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
+    primary_tab.update_child_tabs();
+    primary_tab.update_parent();
+    let mut secondary_tab = Some(&primary_tab.child_tabs.as_mut().unwrap()[0]);
+    // let mut secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
 
     let mut parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent).unwrap();
 
@@ -298,156 +301,161 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    match secondary_tab {
-                        Some(tab) => tab.clear(),
-                        None => (),
-                    };
-                    primary_tab.unhighlight_line().unwrap();
-                    stdout.execute(cursor::MoveDown(1))?;
-                    cursor_pos = cursor::position().unwrap();
-                    primary_tab.current_entry_index += 1;
-                    primary_tab.highlight_line().unwrap();
+                    //     match secondary_tab {
+                    //         Some(tab) => tab.clear(),
+                    //         None => (),
+                    //     };
+                    //     primary_tab.unhighlight_line().unwrap();
+                    //     stdout.execute(cursor::MoveDown(1))?;
+                    //     cursor_pos = cursor::position().unwrap();
+                    //     primary_tab.current_entry_index += 1;
+                    //     primary_tab.highlight_line().unwrap();
 
-                    secondary_tab = Tab::new(
-                        primary_tab.entries[cursor_pos.1 as usize].clone(),
-                        Status::Secondary,
-                    );
+                    //     secondary_tab = Tab::new(
+                    //         primary_tab.entries[cursor_pos.1 as usize].clone(),
+                    //         Status::Secondary,
+                    //     );
 
-                    match secondary_tab {
-                        Some(ref tab) => tab.draw(),
-                        None => (),
-                    }
-                }
-                KeyEvent {
-                    code: KeyCode::Char('k'),
-                    modifiers: event::KeyModifiers::NONE,
-                    ..
-                } => {
-                    match secondary_tab {
-                        Some(tab) => tab.clear(),
-                        None => (),
-                    };
+                    //     match secondary_tab {
+                    //         Some(ref tab) => tab.draw(),
+                    //         None => (),
+                    //     }
+                    // }
+                    // KeyEvent {
+                    //     code: KeyCode::Char('k'),
+                    //     modifiers: event::KeyModifiers::NONE,
+                    //     ..
+                    // } => {
+                    //     match secondary_tab {
+                    //         Some(tab) => tab.clear(),
+                    //         None => (),
+                    //     };
 
-                    primary_tab.unhighlight_line().unwrap();
-                    stdout.execute(cursor::MoveUp(1)).expect("Couldn't move up");
-                    cursor_pos = cursor::position().unwrap();
-                    primary_tab.current_entry_index -= 1;
-                    primary_tab.highlight_line().expect("Couldn't highlight");
+                    //     primary_tab.unhighlight_line().unwrap();
+                    //     stdout.execute(cursor::MoveUp(1)).expect("Couldn't move up");
+                    //     cursor_pos = cursor::position().unwrap();
+                    //     primary_tab.current_entry_index -= 1;
+                    //     primary_tab.highlight_line().expect("Couldn't highlight");
 
-                    secondary_tab = Tab::new(
-                        primary_tab.entries[cursor_pos.1 as usize].clone(),
-                        Status::Secondary,
-                    );
+                    //     secondary_tab = Tab::new(
+                    //         primary_tab.entries[cursor_pos.1 as usize].clone(),
+                    //         Status::Secondary,
+                    //     );
 
-                    match secondary_tab {
-                        Some(ref i) => i.draw(),
-                        None => (),
-                    }
+                    //     match secondary_tab {
+                    //         Some(ref i) => i.draw(),
+                    //         None => (),
+                    //     }
                 }
                 KeyEvent {
                     code: KeyCode::Char('l'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    primary_tab.clear();
-                    match secondary_tab {
-                        Some(ref tab) => {
-                            tab.clear();
-                            parent_tab = primary_tab.clone();
-                            parent_tab.status = Status::Parent;
-                            // primary_tab = Tab::new(tab.dir_path.clone(), Status::Primary).unwrap();
-                            primary_tab = tab.clone();
-                        }
-                        None => (),
-                    }
+                    // primary_tab.clear();
+                    // match secondary_tab {
+                    //     Some(ref tab) => {
+                    //         tab.clear();
+                    //         parent_tab = primary_tab.clone();
+                    //         parent_tab.status = Status::Parent;
+                    //         // primary_tab = Tab::new(tab.dir_path.clone(), Status::Primary).unwrap();
+                    //         primary_tab = tab.clone();
+                    //     }
+                    //     None => (),
+                    // }
 
-                    // Update primary tab to be primary tab after cloning secondary tab
-                    primary_tab.status = Status::Primary;
-                    primary_tab.clear();
-                    primary_tab.draw();
-                    stdout
-                        .queue(cursor::MoveTo(0, primary_tab.current_entry_index as u16))
-                        .unwrap();
-                    primary_tab.highlight_line().unwrap();
+                    // // Update primary tab to be primary tab after cloning secondary tab
+                    // primary_tab.status = Status::Primary;
+                    // primary_tab.clear();
+                    // primary_tab.draw();
+                    // stdout
+                    //     .queue(cursor::MoveTo(0, primary_tab.current_entry_index as u16))
+                    //     .unwrap();
+                    // primary_tab.highlight_line().unwrap();
 
-                    secondary_tab =
-                        Tab::new(primary_tab.entries[0 as usize].clone(), Status::Secondary);
+                    // secondary_tab =
+                    //     Tab::new(primary_tab.entries[0 as usize].clone(), Status::Secondary);
 
-                    match secondary_tab {
-                        Some(ref tab) => {
-                            tab.draw();
-                        }
-                        None => (),
-                    }
+                    // match secondary_tab {
+                    //     Some(ref tab) => {
+                    //         tab.draw();
+                    //     }
+                    //     None => (),
+                    // }
                 }
                 KeyEvent {
                     code: KeyCode::Char('h'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    let old_index = primary_tab.current_entry_index;
-                    // Clear the old tabs
-                    primary_tab.clear();
-                    match secondary_tab {
-                        Some(ref tab) => {
-                            tab.clear();
-                        }
+                    match primary_tab.parent_tab {
+                        Some(ref tab) => {}
                         None => (),
                     }
 
-                    // Remember index of the current tab before we go back
-                    let current_dir = primary_tab.dir_path;
+                    // let old_index = primary_tab.current_entry_index;
+                    // // Clear the old tabs
+                    // primary_tab.clear();
+                    // match secondary_tab {
+                    //     Some(ref tab) => {
+                    //         tab.clear();
+                    //     }
+                    //     None => (),
+                    // }
 
-                    primary_tab = parent_tab.clone();
-                    // print!("{:?}", primary_tab.parent_path);
-                    parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent)
-                        .expect("Couldn't make parent tab");
+                    // // Remember index of the current tab before we go back
+                    // let current_dir = primary_tab.dir_path;
 
-                    let current_index = primary_tab
-                        .entries
-                        .iter()
-                        .position(|entry| entry == &current_dir)
-                        .expect("Couldn't make current index");
+                    // primary_tab = parent_tab.clone();
+                    // // print!("{:?}", primary_tab.parent_path);
+                    // parent_tab = Tab::new(primary_tab.parent_path.clone(), Status::Parent)
+                    //     .expect("Couldn't make parent tab");
 
-                    let current_dir = primary_tab.dir_path.clone();
+                    // let current_index = primary_tab
+                    //     .entries
+                    //     .iter()
+                    //     .position(|entry| entry == &current_dir)
+                    //     .expect("Couldn't make current index");
 
-                    let parent_index = parent_tab
-                        .entries
-                        .iter()
-                        .position(|entry| entry == &current_dir)
-                        .expect("Couldn't make parent index");
+                    // let current_dir = primary_tab.dir_path.clone();
 
-                    parent_tab.current_entry_index = parent_index as i32;
+                    // let parent_index = parent_tab
+                    //     .entries
+                    //     .iter()
+                    //     .position(|entry| entry == &current_dir)
+                    //     .expect("Couldn't make parent index");
 
-                    primary_tab.current_entry_index = current_index as i32;
-                    primary_tab.status = Status::Primary;
-                    secondary_tab = Tab::new(
-                        primary_tab.entries[primary_tab.current_entry_index as usize].clone(),
-                        Status::Secondary,
-                    );
+                    // parent_tab.current_entry_index = parent_index as i32;
 
-                    match secondary_tab {
-                        Some(ref mut tab) => tab.current_entry_index = old_index,
-                        None => (),
-                    }
-                    primary_tab.draw();
+                    // primary_tab.current_entry_index = current_index as i32;
+                    // primary_tab.status = Status::Primary;
+                    // secondary_tab = Tab::new(
+                    //     primary_tab.entries[primary_tab.current_entry_index as usize].clone(),
+                    //     Status::Secondary,
+                    // );
 
-                    // primary_tab = Tab::new(primary_tab.parent_path, Status::Parent).unwrap();
-                    // secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
+                    // match secondary_tab {
+                    //     Some(ref mut tab) => tab.current_entry_index = old_index,
+                    //     None => (),
+                    // }
                     // primary_tab.draw();
 
-                    match secondary_tab {
-                        Some(ref tab) => {
-                            tab.draw();
-                        }
-                        None => (),
-                    }
+                    // // primary_tab = Tab::new(primary_tab.parent_path, Status::Parent).unwrap();
+                    // // secondary_tab = Tab::new(primary_tab.entries[0].clone(), Status::Secondary);
+                    // // primary_tab.draw();
 
-                    stdout
-                        .queue(cursor::MoveToRow(primary_tab.current_entry_index as u16))
-                        .expect("Couldn't move cursor");
+                    // match secondary_tab {
+                    //     Some(ref tab) => {
+                    //         tab.draw();
+                    //     }
+                    //     None => (),
+                    // }
 
-                    primary_tab.highlight_line().expect("Couldn't highlight");
+                    // stdout
+                    //     .queue(cursor::MoveToRow(primary_tab.current_entry_index as u16))
+                    //     .expect("Couldn't move cursor");
+
+                    // primary_tab.highlight_line().expect("Couldn't highlight");
                 }
                 KeyEvent {
                     code: KeyCode::Char('t'),
