@@ -120,11 +120,22 @@ impl Tab {
         })
     }
 
-    // Updates the parent_tab and the child_tabs
-    fn update(&mut self) {
-        let parent_tab = Tab::new(self.parent_path.clone(), Status::Parent).unwrap();
-        self.parent_tab = Some(Box::new(parent_tab));
+    // Updates the parent_tab
+    fn update_parent(&mut self) {
+        let mut parent_tab = Tab::new(self.parent_path.clone(), Status::Parent).unwrap();
 
+        parent_tab.update_child_tabs();
+
+        for mut tab in parent_tab.child_tabs.as_mut().unwrap().iter_mut() {
+            if &tab.dir_path == &self.dir_path {
+                tab = self;
+            }
+        }
+
+        self.parent_tab = Some(Box::new(parent_tab));
+    }
+
+    fn update_child_tabs(&mut self) {
         let mut child_tabs: Vec<Tab> = Vec::new();
         for entry in &self.entries {
             child_tabs.push(Tab::new(entry.clone(), Status::Secondary).unwrap());
