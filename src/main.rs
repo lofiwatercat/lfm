@@ -1,3 +1,4 @@
+mod cleanup;
 mod tab;
 
 use crossterm::{
@@ -12,26 +13,8 @@ use std::io::{stdout, Write};
 // use std::path;
 // use walkdir::WalkDir;
 
-struct CleanUp;
-
-impl Drop for CleanUp {
-    fn drop(&mut self) {
-        terminal::disable_raw_mode().expect("Unable to disable raw-mode");
-        stdout()
-            .execute(cursor::Show)
-            .expect("Unable to show cursor");
-        stdout()
-            .queue(terminal::Clear(terminal::ClearType::All))
-            .expect("Unable to show cursor")
-            .queue(cursor::MoveTo(0, 0))
-            .expect("Unable to reset the cursor")
-            .queue(style::ResetColor)
-            .expect("Unable to reset color");
-    }
-}
-
 fn main() -> Result<()> {
-    let _clean_up = CleanUp;
+    let _clean_up = cleanup::CleanUp;
 
     // Take a directory given as an argument or default to current directory
     // let args: Vec<String> = env::args().collect();
