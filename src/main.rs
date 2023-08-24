@@ -32,6 +32,7 @@ struct Tab {
 }
 
 impl Tab {
+    // Lazily highlights a line and flushes it out at the end
     fn highlight_line(&self) -> Result<()> {
         let original_position = cursor::position().unwrap();
         let secondary_offset = terminal::size().unwrap().0 / 2;

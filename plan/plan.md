@@ -1,6 +1,25 @@
 # Plan for lovely file manager
 
-1. Take an argument, or default to current directory
+## Overview of the data structures
+
+The *Tab* is the primary structure which displays the directory contents. It contains the
+  * dir_path
+    - its a path::PathBuf
+  * parent_path
+    - its the PathBuf of the parent directory
+  * parent_tab
+    - Option because it isn't created until you go up a directory
+  * child_tabs
+    - Option because there may not be any child directories
+  * entries
+    - the directory contents, including files and directories
+    - It's a vec of PathBuf
+  * entries_str
+    - vector of stringified entries
+  * current_entry_index
+    - index of the currently selected item, for persistence reasons
+  * status
+    - determines whether the tab should be the primary, secondary, or parent
 
 Implement tabs into the program.
   * Tabs have the path to the current directory and vector of entries as DirEntry
