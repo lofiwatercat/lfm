@@ -13,6 +13,8 @@ use std::io::{stdout, Write};
 // use std::path;
 // use walkdir::WalkDir;
 
+// Moves a line down
+
 fn main() -> Result<()> {
     let _clean_up = cleanup::CleanUp;
 
@@ -25,7 +27,7 @@ fn main() -> Result<()> {
         println!("Not a directory");
     }
 
-    // Setup
+    // Setup the terminal
     terminal::enable_raw_mode().expect("Unable to enable raw mode");
     let mut stdout = stdout();
     stdout
@@ -43,9 +45,8 @@ fn main() -> Result<()> {
     // let mut cur_directory_entries: Vec<String> = Vec::new();
     // add_to_dirs(&current_path, &mut dirs);
 
-    let copy_path = current_path.clone();
     // Current tab will show the contents of the current directory
-    let mut primary_tab = tab::Tab::new(copy_path, tab::Status::Primary).unwrap();
+    let mut primary_tab = tab::Tab::new(current_path, tab::Status::Primary).unwrap();
     // child_tab will either be Some or None
     let mut secondary_tab = tab::Tab::new(primary_tab.entries[0].clone(), tab::Status::Secondary);
 

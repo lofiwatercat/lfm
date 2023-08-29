@@ -26,8 +26,9 @@ pub struct Tab {
     pub parent_path: path::PathBuf,
     parent_tab: Option<Box<Tab>>,
     child_tabs: Option<Vec<Tab>>,
-    pub entries: Vec<path::PathBuf>,
-    entries_str: Vec<String>,
+    pub file_entries: Vec<path::PathBuf>,
+    pub dir_entries: Vec<path::PathBuf>,
+    // pub entries_str: Vec<String>,
     pub current_entry_index: i32,
     pub status: Status,
 }
@@ -78,9 +79,9 @@ impl Tab {
     }
 
     pub fn new(dir_path: path::PathBuf, status: Status) -> Option<Tab> {
-        let mut entries: Vec<path::PathBuf> = Vec::new();
-        let mut entries_str: Vec<String> = Vec::new();
-        let mut num_dirs = 0;
+        // let mut entries: Vec<Entry> = Vec::new();
+        let mut file_entries: Vec<path::PathBuf>;
+        let mut dir_entries: Vec<path::PathBuf>;
         for entry in WalkDir::new(&dir_path)
             .min_depth(1)
             .max_depth(1)
@@ -88,25 +89,31 @@ impl Tab {
             .sort_by_key(|a| a.path().is_file())
             .into_iter()
         {
-            let dir_entry = entry.unwrap();
-            if dir_entry.clone().into_path().is_dir() {
-                num_dirs += 1;
+            let entry_path = path::PathBuf::from(entry.unwrap().path());
+            if entry.unwrap().file_type().is_dir() {
+                dir_entries.push(entry_path);
+            } else {
+                file_entries.push(entry_path)
             }
-            entries.push(dir_entry.into_path());
         }
 
         // Reverse the order of the directories to be alphabetical
-        if num_dirs > 0 {
-            num_dirs -= 1;
-        }
+        // if num_dirs > 0 {
+        //     num_dirs -= 1;
+        // }
 
-        for index in 0..num_dirs {
-            entries.swap(index, num_dirs - index);
-        }
+        // for index in 0..num_dirs {
+        //     entries.swap(index, num_dirs - index);
+        // }
 
-        for entry in &entries {
-            entries_str.push(entry.file_name().unwrap().to_str().unwrap().to_string());
-        }
+        // for entry in &entries {
+        //     match entry {
+        //         Entry::File(file) => {
+        //             entries_str.push(file.file_name().unwrap().to_str().unwrap().to_string())
+        //         }
+        //         Entry::Dir(tab) => entries_str.push(tab.dir_path.to_str().unwrap().to_string()),
+        //     }
+        // }
 
         let parent_path = dir_path.parent().unwrap().to_path_buf();
 
@@ -114,9 +121,11 @@ impl Tab {
             dir_path,
             parent_tab: None,
             parent_path,
+            file_entries,
+            dir_entries,
             child_tabs: None,
-            entries,
-            entries_str,
+            // entries,
+            // entries_str,
             current_entry_index: 0,
             status,
         })
@@ -140,7 +149,7 @@ impl Tab {
     pub fn update_child_tabs(&mut self) {
         let mut child_tabs: Vec<Tab> = Vec::new();
         for entry in &self.entries {
-            child_tabs.push(Tab::new(entry.clone(), Status::Secondary).unwrap());
+            child_tabs.push(Tab::new(entry.to_path_buf(), Status::Secondary).unwrap());
         }
 
         self.child_tabs = Some(child_tabs);
@@ -206,5 +215,13 @@ impl Tab {
             .queue(cursor::MoveTo(original_position.0, original_position.1))
             .unwrap();
         stdout().flush().unwrap();
+    }
+
+    // Moves a line down
+    pub fn move_down(&self) {
+        match self.secondary_tab {
+            Some(tab) => tab.clear(),
+            None => (),
+        }
     }
 }

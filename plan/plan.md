@@ -21,7 +21,15 @@ The *Tab* is the primary structure which displays the directory contents. It con
   * status
     - determines whether the tab should be the primary, secondary, or parent
 
-Implement tabs into the program.
+## Overview of the files and directory structure
+main.rs
+  * Currently contains the main loop of the program
+tabs.rs
+  * Contains the tab data structure
+cleanup.rs
+  * Contains logic to clean up after the program
+
+DONE - Implement tabs into the program.
   * Tabs have the path to the current directory and vector of entries as DirEntry
   * Need to draw them, add a draw impl
   * Need to be able to create them given a path, and take care of the case where it's not a directory
@@ -40,7 +48,7 @@ DONE - Printing entries
   * Need to put directories first at the top of the list
   * Need to hide hidden files by default. Add option later to view them. 
 
-TODO - Allow horizontal movement
+DONE - Allow horizontal movement
   * Add a current_entry to show the currently selected entry.
     - allows for horizontal movement to remember previously seleected
   * Update primary tab, secondary tab, and parent tab
@@ -49,18 +57,17 @@ TODO - Allow horizontal movement
 DONE - Refactor vertical movement
   * Update current_entry and highlight the line
 
-TODO - Reorganize code
+DONE - Reorganize code
   * Break things up into modules
 
 DONE - Refactor highlight (again)
   * Add it as an implementation for tab
 
-TODO - Refactor loop
-  * Primary tab -> Current tab
-  * Current tab will be updated with horizontal movement
+TODO - Refactor entries into FileEntries and DirEntries
 
-TODO - Parent tab
-  * Much smaller than primary and secondary tab
+TODO - Clean up main loop and break it up into functions
+  * create functions that correspond with the movements, like move_down
+    - should they be a function in main or a tab function?
 
 TODO - Fix going back too far breaking
 
