@@ -105,26 +105,7 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    match secondary_tab {
-                        Some(tab) => tab.clear(),
-                        None => (),
-                    };
-
-                    primary_tab.unhighlight_line().unwrap();
-                    stdout.execute(cursor::MoveUp(1)).expect("Couldn't move up");
-                    cursor_pos = cursor::position().unwrap();
-                    primary_tab.current_entry_index -= 1;
-                    primary_tab.highlight_line().expect("Couldn't highlight");
-
-                    secondary_tab = tab::Tab::new(
-                        path::PathBuf::from(entries[cursor_pos.1 as usize].clone()),
-                        tab::Status::Secondary,
-                    );
-
-                    match secondary_tab {
-                        Some(ref i) => i.draw(),
-                        None => (),
-                    }
+                    primary_tab.move_up();
                 }
                 KeyEvent {
                     code: KeyCode::Char('l'),

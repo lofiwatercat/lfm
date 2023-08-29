@@ -261,4 +261,20 @@ impl Tab {
         self.highlight_line().unwrap();
         self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
     }
+
+    // Moves a line up
+    pub fn move_up(&mut self) {
+        // If current index is on a dir, then we need to clear the secondary tab
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].clear();
+        }
+        self.unhighlight_line().unwrap();
+        stdout()
+            .execute(cursor::MoveUp(1))
+            .expect("Couldn't move up");
+        self.current_entry_index -= 1;
+        self.highlight_line().expect("Couldn't highlight");
+
+        self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+    }
 }
