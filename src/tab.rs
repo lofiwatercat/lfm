@@ -3,7 +3,7 @@ use crossterm::{
     // event::{self, Event, KeyCode, KeyEvent},
     style::{self, Color, Stylize},
     terminal,
-    // ExecutableCommand,
+    ExecutableCommand,
     QueueableCommand,
     Result,
 };
@@ -25,10 +25,9 @@ pub struct Tab {
     pub dir_path: path::PathBuf,
     pub parent_path: path::PathBuf,
     parent_tab: Option<Box<Tab>>,
-    child_tabs: Option<Vec<Tab>>,
+    pub child_tabs: Option<Vec<Tab>>,
     pub file_entries: Vec<path::PathBuf>,
     pub dir_entries: Vec<path::PathBuf>,
-    // pub entries_str: Vec<String>,
     pub current_entry_index: i32,
     pub status: Status,
 }
@@ -117,6 +116,12 @@ impl Tab {
             }
         }
 
+        let mut child_tabs: Vec<Tab> = Vec::new();
+
+        for dir in dir_entries.clone() {
+            child_tabs.push(Tab::new(dir, Status::Secondary).unwrap());
+        }
+
         // Reverse the order of the directories to be alphabetical
         // if num_dirs > 0 {
         //     num_dirs -= 1;
@@ -143,7 +148,7 @@ impl Tab {
             parent_path,
             file_entries,
             dir_entries,
-            child_tabs: None,
+            child_tabs: Some(child_tabs),
             // entries,
             // entries_str,
             current_entry_index: 0,
@@ -169,10 +174,8 @@ impl Tab {
     pub fn update_child_tabs(&mut self) {
         let mut child_tabs: Vec<Tab> = Vec::new();
 
-        let entries = self.get_entries();
-
-        for entry in entries {
-            child_tabs.push(Tab::new(path::PathBuf::from(entry), Status::Secondary).unwrap());
+        for dir in self.dir_entries.clone() {
+            child_tabs.push(Tab::new(dir, Status::Secondary).unwrap());
         }
 
         self.child_tabs = Some(child_tabs);
@@ -246,10 +249,16 @@ impl Tab {
     }
 
     // Moves a line down
-    // pub fn move_down(&self) {
-    //     match self.secondary_tab {
-    //         Some(tab) => tab.clear(),
-    //         None => (),
-    //     }
-    // }
+    pub fn move_down(&mut self) {
+        // If current index is on a dir, then we need to clear the secondary tab
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].clear();
+        }
+        self.unhighlight_line().unwrap();
+        stdout().execute(cursor::MoveDown(1)).unwrap();
+        // let cursor_pos = cursor::position().unwrap();
+        self.current_entry_index += 1;
+        self.highlight_line().unwrap();
+        self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+    }
 }

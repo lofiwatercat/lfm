@@ -54,16 +54,20 @@ fn main() -> Result<()> {
         tab::Status::Secondary,
     );
 
+    // primary_tab.update_child_tabs();
+
+    primary_tab.child_tabs.as_ref().unwrap()[0].draw();
+
     let mut parent_tab =
         tab::Tab::new(primary_tab.parent_path.clone(), tab::Status::Parent).unwrap();
 
     // Prints the contents of the current tab
     // stdout.queue(cursor::Show).unwrap();
     primary_tab.draw();
-    match secondary_tab {
-        Some(ref i) => i.draw(),
-        None => (),
-    }
+    // match secondary_tab {
+    //     Some(ref i) => i.draw(),
+    //     None => (),
+    // }
 
     // Setup for loop
     // let mut entries = get_strings_from_dir(&current_path, &dirs);
@@ -94,25 +98,7 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    match secondary_tab {
-                        Some(tab) => tab.clear(),
-                        None => (),
-                    };
-                    primary_tab.unhighlight_line().unwrap();
-                    stdout.execute(cursor::MoveDown(1))?;
-                    cursor_pos = cursor::position().unwrap();
-                    primary_tab.current_entry_index += 1;
-                    primary_tab.highlight_line().unwrap();
-
-                    secondary_tab = tab::Tab::new(
-                        path::PathBuf::from(entries[cursor_pos.1 as usize].clone()),
-                        tab::Status::Secondary,
-                    );
-
-                    match secondary_tab {
-                        Some(ref tab) => tab.draw(),
-                        None => (),
-                    }
+                    primary_tab.move_down();
                 }
                 KeyEvent {
                     code: KeyCode::Char('k'),
