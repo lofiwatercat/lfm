@@ -34,6 +34,19 @@ pub struct Tab {
 }
 
 impl Tab {
+    pub fn get_entries(&self) -> Vec<String> {
+        let mut entries = self.dir_entries.clone();
+
+        entries.append(&mut self.file_entries.clone());
+
+        let entries: Vec<String> = entries
+            .iter()
+            .map(|entry| entry.file_name().unwrap().to_str().unwrap().to_string())
+            .collect();
+
+        return entries;
+    }
+
     // Lazily highlights a line and flushes it out at the end
     pub fn highlight_line(&self) -> Result<()> {
         let original_position = cursor::position().unwrap();
@@ -42,13 +55,19 @@ impl Tab {
         let (mut width, _) = terminal::size().unwrap();
         width /= 2;
 
-        let contents = &self.entries_str[self.current_entry_index as usize];
+        // Make a vector with dirs first then files
+        // let entries = self.dir_entries.clone();
+        // entries.append(&mut self.file_entries.clone());
+        let entries = self.get_entries();
 
+        let content = entries[self.current_entry_index as usize].clone();
+
+        // Queue up the highlighted line
         stdout().queue(style::PrintStyledContent(
-            contents.clone().with(Color::Black).on(Color::Blue),
+            content.clone().with(Color::Black).on(Color::Blue),
         ))?;
 
-        for _ in 0..width - contents.len() as u16 {
+        for _ in 0..width - content.len() as u16 {
             stdout().queue(style::PrintStyledContent(
                 " ".with(Color::Black).on(Color::Blue),
             ))?;
@@ -66,11 +85,12 @@ impl Tab {
         let (mut width, _) = terminal::size().unwrap();
         width /= 2;
 
-        let contents = &self.entries_str[self.current_entry_index as usize];
+        // let contents = &self.entries_str[self.current_entry_index as usize];
+        let content = self.get_entries()[self.current_entry_index as usize].clone();
 
-        stdout().queue(style::Print(contents))?;
+        stdout().queue(style::Print(content.clone()))?;
 
-        for _ in 0..width - contents.len() as u16 {
+        for _ in 0..width - content.len() as u16 {
             stdout().queue(style::Print(" "))?;
         }
         stdout().queue(cursor::MoveTo(original_position.0, original_position.1))?;
@@ -80,8 +100,8 @@ impl Tab {
 
     pub fn new(dir_path: path::PathBuf, status: Status) -> Option<Tab> {
         // let mut entries: Vec<Entry> = Vec::new();
-        let mut file_entries: Vec<path::PathBuf>;
-        let mut dir_entries: Vec<path::PathBuf>;
+        let mut file_entries: Vec<path::PathBuf> = Vec::new();
+        let mut dir_entries: Vec<path::PathBuf> = Vec::new();
         for entry in WalkDir::new(&dir_path)
             .min_depth(1)
             .max_depth(1)
@@ -89,7 +109,7 @@ impl Tab {
             .sort_by_key(|a| a.path().is_file())
             .into_iter()
         {
-            let entry_path = path::PathBuf::from(entry.unwrap().path());
+            let entry_path = path::PathBuf::from(entry.as_ref().unwrap().path());
             if entry.unwrap().file_type().is_dir() {
                 dir_entries.push(entry_path);
             } else {
@@ -148,8 +168,11 @@ impl Tab {
 
     pub fn update_child_tabs(&mut self) {
         let mut child_tabs: Vec<Tab> = Vec::new();
-        for entry in &self.entries {
-            child_tabs.push(Tab::new(entry.to_path_buf(), Status::Secondary).unwrap());
+
+        let entries = self.get_entries();
+
+        for entry in entries {
+            child_tabs.push(Tab::new(path::PathBuf::from(entry), Status::Secondary).unwrap());
         }
 
         self.child_tabs = Some(child_tabs);
@@ -174,10 +197,12 @@ impl Tab {
         stdout()
             .queue(style::SetForegroundColor(Color::White))
             .unwrap();
-        for entry in &self.entries {
+
+        let entries = self.get_entries();
+        for entry in entries {
             let (cursor_x, cursor_y) = cursor::position().unwrap();
             stdout()
-                .queue(style::Print(entry.file_name().unwrap().to_str().unwrap()))
+                .queue(style::Print(entry))
                 .unwrap()
                 .queue(cursor::MoveTo(cursor_x, cursor_y + 1))
                 .unwrap();
@@ -203,7 +228,10 @@ impl Tab {
             }
             _ => {}
         }
-        for entry in &self.entries {
+
+        let entries = self.get_entries();
+
+        for entry in entries {
             let (cursor_x, cursor_y) = cursor::position().unwrap();
             stdout()
                 .queue(terminal::Clear(terminal::ClearType::UntilNewLine))
@@ -218,10 +246,10 @@ impl Tab {
     }
 
     // Moves a line down
-    pub fn move_down(&self) {
-        match self.secondary_tab {
-            Some(tab) => tab.clear(),
-            None => (),
-        }
-    }
+    // pub fn move_down(&self) {
+    //     match self.secondary_tab {
+    //         Some(tab) => tab.clear(),
+    //         None => (),
+    //     }
+    // }
 }

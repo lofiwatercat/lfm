@@ -10,7 +10,7 @@ use crossterm::{
 // use std::collections::HashMap;
 use std::env;
 use std::io::{stdout, Write};
-// use std::path;
+use std::path;
 // use walkdir::WalkDir;
 
 // Moves a line down
@@ -48,7 +48,11 @@ fn main() -> Result<()> {
     // Current tab will show the contents of the current directory
     let mut primary_tab = tab::Tab::new(current_path, tab::Status::Primary).unwrap();
     // child_tab will either be Some or None
-    let mut secondary_tab = tab::Tab::new(primary_tab.entries[0].clone(), tab::Status::Secondary);
+    let entries = primary_tab.get_entries();
+    let mut secondary_tab = tab::Tab::new(
+        path::PathBuf::from(entries[0].clone()),
+        tab::Status::Secondary,
+    );
 
     let mut parent_tab =
         tab::Tab::new(primary_tab.parent_path.clone(), tab::Status::Parent).unwrap();
@@ -101,7 +105,7 @@ fn main() -> Result<()> {
                     primary_tab.highlight_line().unwrap();
 
                     secondary_tab = tab::Tab::new(
-                        primary_tab.entries[cursor_pos.1 as usize].clone(),
+                        path::PathBuf::from(entries[cursor_pos.1 as usize].clone()),
                         tab::Status::Secondary,
                     );
 
@@ -127,7 +131,7 @@ fn main() -> Result<()> {
                     primary_tab.highlight_line().expect("Couldn't highlight");
 
                     secondary_tab = tab::Tab::new(
-                        primary_tab.entries[cursor_pos.1 as usize].clone(),
+                        path::PathBuf::from(entries[cursor_pos.1 as usize].clone()),
                         tab::Status::Secondary,
                     );
 
@@ -163,7 +167,7 @@ fn main() -> Result<()> {
                     primary_tab.highlight_line().unwrap();
 
                     secondary_tab = tab::Tab::new(
-                        primary_tab.entries[0 as usize].clone(),
+                        path::PathBuf::from(entries[0 as usize].clone()),
                         tab::Status::Secondary,
                     );
 
@@ -198,18 +202,16 @@ fn main() -> Result<()> {
                         tab::Tab::new(primary_tab.parent_path.clone(), tab::Status::Parent)
                             .expect("Couldn't make parent tab");
 
-                    let current_index = primary_tab
-                        .entries
+                    let current_index = entries
                         .iter()
-                        .position(|entry| entry == &current_dir)
+                        .position(|entry| path::PathBuf::from(entry) == current_dir)
                         .expect("Couldn't make current index");
 
                     let current_dir = primary_tab.dir_path.clone();
 
-                    let parent_index = parent_tab
-                        .entries
+                    let parent_index = entries
                         .iter()
-                        .position(|entry| entry == &current_dir)
+                        .position(|entry| path::PathBuf::from(entry) == current_dir)
                         .expect("Couldn't make parent index");
 
                     parent_tab.current_entry_index = parent_index as i32;
@@ -217,7 +219,9 @@ fn main() -> Result<()> {
                     primary_tab.current_entry_index = current_index as i32;
                     primary_tab.status = tab::Status::Primary;
                     secondary_tab = tab::Tab::new(
-                        primary_tab.entries[primary_tab.current_entry_index as usize].clone(),
+                        path::PathBuf::from(
+                            entries[primary_tab.current_entry_index as usize].clone(),
+                        ),
                         tab::Status::Secondary,
                     );
 
