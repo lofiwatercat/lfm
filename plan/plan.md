@@ -66,6 +66,11 @@ DONE - Refactor highlight (again)
 DONE - Refactor entries into FileEntries and DirEntries
 
 TODO - Fix horizontal movement
+  * Moving up to the parent directory has a few steps
+    1. clear the primary and child tab
+    2. update primary's parent tab
+    3. Make the primary tab equal to the primary tab's parent tab
+    4. draw the parent and child tabs
 
 TODO - Clean up main loop and break it up into functions
   * create functions that correspond with the movements, like move_down

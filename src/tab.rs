@@ -156,7 +156,7 @@ impl Tab {
         })
     }
 
-    // Updates the parent_tab
+    // Updates the parent_tab while placing the current tab data into the parent tab's corresponding child tab
     pub fn update_parent(&mut self) {
         let mut parent_tab = Tab::new(self.parent_path.clone(), Status::Parent).unwrap();
 
@@ -171,6 +171,7 @@ impl Tab {
         self.parent_tab = Some(Box::new(parent_tab));
     }
 
+    // Creates all the child tabs for each dir entry
     pub fn update_child_tabs(&mut self) {
         let mut child_tabs: Vec<Tab> = Vec::new();
 
@@ -282,4 +283,7 @@ impl Tab {
             self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
         }
     }
+
+    // Clears the tabs and makes the parent tab the new primary tab
+    pub fn go_to_parent_tab(&mut self) {}
 }

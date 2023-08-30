@@ -146,6 +146,13 @@ fn main() -> Result<()> {
                     }
                 }
                 KeyEvent {
+                    code: KeyCode::Char('g'),
+                    modifiers: event::KeyModifiers::NONE,
+                    ..
+                } => {
+                    primary_tab.clear();
+                }
+                KeyEvent {
                     code: KeyCode::Char('h'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
