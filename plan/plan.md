@@ -63,11 +63,14 @@ DONE - Reorganize code
 DONE - Refactor highlight (again)
   * Add it as an implementation for tab
 
-TODO - Refactor entries into FileEntries and DirEntries
+DONE - Refactor entries into FileEntries and DirEntries
+
+TODO - Fix horizontal movement
 
 TODO - Clean up main loop and break it up into functions
   * create functions that correspond with the movements, like move_down
     - should they be a function in main or a tab function?
+    - made them a tab function
 
 TODO - Fix going back too far breaking
 
