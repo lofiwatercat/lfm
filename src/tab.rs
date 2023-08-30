@@ -256,10 +256,13 @@ impl Tab {
         }
         self.unhighlight_line().unwrap();
         stdout().execute(cursor::MoveDown(1)).unwrap();
-        // let cursor_pos = cursor::position().unwrap();
         self.current_entry_index += 1;
         self.highlight_line().unwrap();
-        self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+
+        // Don't draw the child tab if it isn't a directory
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+        }
     }
 
     // Moves a line up
@@ -275,6 +278,8 @@ impl Tab {
         self.current_entry_index -= 1;
         self.highlight_line().expect("Couldn't highlight");
 
-        self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+        }
     }
 }
