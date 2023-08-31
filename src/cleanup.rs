@@ -16,8 +16,8 @@ impl Drop for CleanUp {
             .execute(cursor::Show)
             .expect("Unable to show cursor");
         stdout()
-            .queue(terminal::Clear(terminal::ClearType::All))
-            .expect("Unable to show cursor")
+            // .queue(terminal::Clear(terminal::ClearType::All))
+            // .expect("Unable to show cursor")
             .queue(cursor::MoveTo(0, 0))
             .expect("Unable to reset the cursor")
             .queue(style::ResetColor)

@@ -269,6 +269,8 @@ impl Tab {
         self.highlight_line().unwrap();
 
         // println!("cei: {}", self.current_entry_index);
+        // println!("dir_entry.len: {}", self.dir_entries.len());
+        // println!("{:?}", self.dir_entries);
 
         // Don't draw the child tab if it isn't a directory
         if self.current_entry_index < self.dir_entries.len() as i32 {
@@ -323,6 +325,10 @@ impl Tab {
         self.dir_entries = parent_tab.dir_entries;
         self.file_entries = parent_tab.file_entries;
         self.current_entry_index = 0;
+        self.update_child_tabs();
+        stdout()
+            .queue(cursor::MoveTo(0, self.current_entry_index as u16))
+            .unwrap();
 
         self.draw();
         self.highlight_line().unwrap();

@@ -108,6 +108,13 @@ fn main() -> Result<()> {
                     primary_tab.move_up();
                 }
                 KeyEvent {
+                    code: KeyCode::Char('h'),
+                    modifiers: event::KeyModifiers::NONE,
+                    ..
+                } => {
+                    primary_tab.go_to_parent_tab();
+                }
+                KeyEvent {
                     code: KeyCode::Char('l'),
                     modifiers: event::KeyModifiers::NONE,
                     ..
@@ -147,13 +154,6 @@ fn main() -> Result<()> {
                         }
                         None => (),
                     }
-                }
-                KeyEvent {
-                    code: KeyCode::Char('h'),
-                    modifiers: event::KeyModifiers::NONE,
-                    ..
-                } => {
-                    primary_tab.go_to_parent_tab();
                 }
                 KeyEvent {
                     code: KeyCode::Char('t'),
