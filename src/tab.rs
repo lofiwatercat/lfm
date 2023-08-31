@@ -331,6 +331,9 @@ impl Tab {
             .unwrap();
 
         self.draw();
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+        }
         self.highlight_line().unwrap();
     }
 }
