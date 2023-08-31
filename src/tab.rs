@@ -172,11 +172,19 @@ impl Tab {
     }
 
     // Creates all the child tabs for each dir entry
+    // Doesn't replace existing tabs
     pub fn update_child_tabs(&mut self) {
         let mut child_tabs: Vec<Tab> = Vec::new();
+        let mut existing_child_tabs: Vec<path::PathBuf> = Vec::new();
+
+        for child_tab in self.child_tabs.clone().unwrap() {
+            existing_child_tabs.push(child_tab.dir_path);
+        }
 
         for dir in self.dir_entries.clone() {
-            child_tabs.push(Tab::new(dir, Status::Secondary).unwrap());
+            if !existing_child_tabs.contains(&dir) {
+                child_tabs.push(Tab::new(dir, Status::Secondary).unwrap());
+            }
         }
 
         self.child_tabs = Some(child_tabs);
@@ -260,6 +268,8 @@ impl Tab {
         self.current_entry_index += 1;
         self.highlight_line().unwrap();
 
+        // println!("cei: {}", self.current_entry_index);
+
         // Don't draw the child tab if it isn't a directory
         if self.current_entry_index < self.dir_entries.len() as i32 {
             self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
@@ -285,5 +295,36 @@ impl Tab {
     }
 
     // Clears the tabs and makes the parent tab the new primary tab
-    pub fn go_to_parent_tab(&mut self) {}
+    pub fn go_to_parent_tab(&mut self) {
+        // Clear current tabs
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].clear();
+        }
+        self.clear();
+        // self.update_parent();
+        let mut old_tab = self.clone();
+        // Make the old tab a child tab with secondary status
+        old_tab.status = Status::Secondary;
+        // If the parent tab exists, then replace the data with the parent data.
+        // If not, create a new tab for the parent.
+        // Now the parent tab has takes over. Replace data with the parent data
+        let parent_tab: Tab;
+        match self.parent_tab.clone() {
+            Some(tab) => parent_tab = *tab,
+            None => {
+                parent_tab = *Box::new(Tab::new(self.parent_path.clone(), Status::Parent).unwrap())
+            }
+        };
+
+        // Using parent tab as a reference
+        // let parent_tab = *(self.parent_tab.clone().unwrap());
+        self.dir_path = self.parent_path.clone();
+        self.parent_path = self.dir_path.parent().unwrap().to_path_buf();
+        self.dir_entries = parent_tab.dir_entries;
+        self.file_entries = parent_tab.file_entries;
+        self.current_entry_index = 0;
+
+        self.draw();
+        self.highlight_line().unwrap();
+    }
 }
