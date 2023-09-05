@@ -6,6 +6,7 @@ Currently a work in progress and very buggy. Will crash very easily, like if you
 ## How to run
 Download the binary from the release pages and run
 ```
+chmod +x lfm
 ./lfm
 ```
 
