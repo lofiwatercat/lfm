@@ -227,6 +227,12 @@ impl Tab {
         stdout().flush().unwrap();
     }
 
+    pub fn clear2() {
+        stdout()
+            .queue(terminal::Clear(terminal::ClearType::All))
+            .unwrap();
+    }
+
     // Clears the tab. Primarily used for the secondary tab
     pub fn clear(&self) {
         let original_position = cursor::position().unwrap();
@@ -304,9 +310,9 @@ impl Tab {
         }
         self.clear();
         // self.update_parent();
-        let mut old_tab = self.clone();
-        // Make the old tab a child tab with secondary status
-        old_tab.status = Status::Secondary;
+        // let mut old_tab = self.clone();
+        // // Make the old tab a child tab with secondary status
+        // old_tab.status = Status::Secondary;
         // If the parent tab exists, then replace the data with the parent data.
         // If not, create a new tab for the parent.
         // Now the parent tab has takes over. Replace data with the parent data
@@ -330,6 +336,31 @@ impl Tab {
             .queue(cursor::MoveTo(0, self.current_entry_index as u16))
             .unwrap();
 
+        self.draw();
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();
+        }
+        self.highlight_line().unwrap();
+    }
+
+    // Change the primary tab to the child tab
+    pub fn go_to_child_tab(&mut self) {
+        if self.current_entry_index < self.dir_entries.len() as i32 {
+            self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].clear();
+        }
+        self.clear();
+
+        let new_tab = self.child_tabs.clone().unwrap()[self.current_entry_index as usize].clone();
+
+        self.parent_path = self.dir_path.clone();
+        self.dir_path = new_tab.dir_path;
+        self.file_entries = new_tab.file_entries;
+        self.dir_entries = new_tab.dir_entries;
+        self.current_entry_index = new_tab.current_entry_index;
+        self.update_parent();
+        self.update_child_tabs();
+
+        stdout().queue(cursor::MoveTo(0, 0)).unwrap();
         self.draw();
         if self.current_entry_index < self.dir_entries.len() as i32 {
             self.child_tabs.as_mut().unwrap()[self.current_entry_index as usize].draw();

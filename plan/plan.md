@@ -71,6 +71,11 @@ TODO - Fix horizontal movement
     2. update primary's parent tab
     3. Make the primary tab equal to the primary tab's parent tab
     4. draw the parent and child tabs
+  * Fix movement to the right, into the child tab
+    1. clear the primary and child tab
+    2. update primary's parent tab to itself
+    3. make the primary tab equal to the child tab
+    4. draw the primary and child tab
 
 TODO - Clean up main loop and break it up into functions
   * create functions that correspond with the movements, like move_down

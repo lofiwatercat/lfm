@@ -119,41 +119,7 @@ fn main() -> Result<()> {
                     modifiers: event::KeyModifiers::NONE,
                     ..
                 } => {
-                    primary_tab.clear();
-                    match secondary_tab {
-                        Some(ref tab) => {
-                            tab.clear();
-                            parent_tab = primary_tab.clone();
-                            parent_tab.status = tab::Status::Parent;
-                            // primary_tab = Tab::new(tab.dir_path.clone(), Status::Primary).unwrap();
-                            primary_tab = tab.clone();
-                        }
-                        None => (),
-                    }
-
-                    // Update primary tab to be primary tab after cloning secondary tab
-                    primary_tab.status = tab::Status::Primary;
-                    primary_tab.clear();
-                    primary_tab.draw();
-                    stdout
-                        .queue(cursor::MoveTo(
-                            0,
-                            primary_tab.clone().current_entry_index as u16,
-                        ))
-                        .unwrap();
-                    primary_tab.highlight_line().unwrap();
-
-                    secondary_tab = tab::Tab::new(
-                        path::PathBuf::from(entries[0 as usize].clone()),
-                        tab::Status::Secondary,
-                    );
-
-                    match secondary_tab {
-                        Some(ref tab) => {
-                            tab.draw();
-                        }
-                        None => (),
-                    }
+                    primary_tab.go_to_child_tab();
                 }
                 KeyEvent {
                     code: KeyCode::Char('t'),
