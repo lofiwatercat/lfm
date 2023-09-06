@@ -11,10 +11,10 @@ chmod +x lfm
 ```
 
 ## How to use
-h - go up a directory
-l - enter a directory
-j - go down a line
-k - go up a line
+ * h - go up a directory
+ * l - enter a directory
+ * j - go down a line
+ * k - go up a line
 
 ## Future goals
   * Entering a file will open it in a text editor
