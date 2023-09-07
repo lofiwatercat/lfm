@@ -17,8 +17,8 @@ impl Drop for CleanUp {
             .expect("Unable to show cursor");
         stdout()
             // Comment out the first queue command to display errors
-            .queue(terminal::Clear(terminal::ClearType::All))
-            .expect("Unable to show cursor")
+            // .queue(terminal::Clear(terminal::ClearType::All))
+            // .expect("Unable to show cursor")
             .queue(cursor::MoveTo(0, 0))
             .expect("Unable to reset the cursor")
             .queue(style::ResetColor)
