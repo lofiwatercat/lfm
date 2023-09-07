@@ -6,14 +6,15 @@ Currently a work in progress and very buggy. Will crash very easily, like if you
 ## How to run
 Download the binary from the release pages and run
 ```
+chmod +x lfm
 ./lfm
 ```
 
 ## How to use
-h - go up a directory
-l - enter a directory
-j - go down a line
-k - go up a line
+ * h - go up a directory
+ * l - enter a directory
+ * j - go down a line
+ * k - go up a line
 
 ## Future goals
   * Entering a file will open it in a text editor
