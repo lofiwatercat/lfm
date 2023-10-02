@@ -15,6 +15,7 @@ chmod +x lfm
  * l - enter a directory
  * j - go down a line
  * k - go up a line
+ * q - quit
 
 ## Future goals
   * Entering a file will open it in a text editor
